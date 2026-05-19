@@ -8,7 +8,7 @@
 <style>
 /* ── Reset ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;overflow:hidden;}
+html,body{height:100%;overflow-x:hidden;overflow-y:auto;}
 
 /* ── Variables ── */
 :root{
@@ -21,14 +21,14 @@ html,body{height:100%;overflow:hidden;}
   --flat:#8494b0;
   --cyan:#22d3ee; --blue:#4a90e2;
   --amber:#f59e0b; --purple:#9b72f5;
-  --ma1:#f59e0b; --ma2:#4a90e2; --ma3:#9b72f5;
+  --ma1:#f59e0b; --ma2:#4a90e2; --ma3:#9b72f5; --ma4:#e84545;
   --mono:'JetBrains Mono','Consolas',monospace;
   --ui:'Noto Sans TC',-apple-system,sans-serif;
-  --topbar-h:44px; --left-w:220px; --right-w:210px;
+  --topbar-h:48px; --left-w:240px; --right-w:230px;
 }
 
 /* ── Base ── */
-body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:12px;line-height:1.45;}
+body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:13px;line-height:1.45;}
 ::-webkit-scrollbar{width:3px;height:3px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--bd3);border-radius:2px;}
@@ -59,7 +59,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:12px
 .error-banner.show{display:flex;}
 
 /* ── Layout ── */
-.main-layout{display:grid;grid-template-columns:var(--left-w) 1fr var(--right-w);height:calc(100vh - var(--topbar-h) - 34px);overflow:hidden;}
+.main-layout{display:grid;grid-template-columns:var(--left-w) 1fr var(--right-w);min-height:calc(100vh - var(--topbar-h) - 34px);height:calc(100vh - var(--topbar-h) - 34px);overflow:hidden;}
 @media(max-width:1100px){.main-layout{grid-template-columns:var(--left-w) 1fr 0;} .right-col{display:none;}}
 @media(max-width:720px){.main-layout{grid-template-columns:0 1fr 0;} .left-col,.right-col{display:none;}}
 
@@ -127,8 +127,8 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:12px
 .chart-label{position:absolute;top:3px;left:8px;font-family:var(--mono);font-size:8px;color:var(--tx4);z-index:5;}
 
 /* 下方卡片 */
-.bottom-cards{height:220px;flex-shrink:0;border-top:1px solid var(--bd1);display:flex;overflow-x:auto;background:var(--bg1);}
-.bcard{min-width:172px;flex-shrink:0;padding:6px 8px;border-right:1px solid var(--bd1);display:flex;flex-direction:column;gap:3px;}
+.bottom-cards{height:260px;flex-shrink:0;border-top:1px solid var(--bd1);display:flex;overflow-x:auto;background:var(--bg1);}
+.bcard{min-width:185px;flex-shrink:0;padding:7px 9px;border-right:1px solid var(--bd1);display:flex;flex-direction:column;gap:3px;}
 .bcard:last-child{border-right:none;}
 .bcard-wide{min-width:210px;}
 .bcard-title{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding-bottom:4px;border-bottom:1px solid var(--bd1);flex-shrink:0;color:var(--tx3);}
@@ -305,6 +305,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:12px
       <div class="param-row"><span class="param-lbl">MA1（天）</span><input class="param-inp" id="p-ma1" value="5"></div>
       <div class="param-row"><span class="param-lbl">MA2（天）</span><input class="param-inp" id="p-ma2" value="20"></div>
       <div class="param-row"><span class="param-lbl">MA3（天）</span><input class="param-inp" id="p-ma3" value="60"></div>
+      <div class="param-row"><span class="param-lbl">MA4 年線</span><input class="param-inp" id="p-ma4" value="240"></div>
     </div>
     <div class="section-hd" onclick="toggleSection('pm-kd')">
       <span class="section-title">KD 參數</span>
@@ -365,6 +366,10 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:12px
       <span class="ma-item" style="color:#9b72f5">
         <span class="ma-dot" style="background:#9b72f5"></span>
         <span id="ma3-legend">MA60: —</span>
+      </span>
+      <span class="ma-item" style="color:#e84545">
+        <span class="ma-dot" style="background:#e84545"></span>
+        <span id="ma4-legend">MA240: —</span>
       </span>
     </div>
     <!-- 型態標注開關 -->
@@ -687,7 +692,7 @@ const STATE = {
   symbol:  '2330',
   rawData: null,
   params: {
-    ma1:5, ma2:20, ma3:60,
+    ma1:5, ma2:20, ma3:60, ma4:240,
     kdN:9, kdM1:3, kdM2:3,
     macdFast:12, macdSlow:26, macdSignal:9,
     rsi:14, volMA:5,
@@ -826,7 +831,7 @@ async function fetchStockData(symbol){
   // 依序嘗試 ticker
   for(const ticker of tickers){
     try{
-      result = await fetchYahooChart(ticker, '6mo', '1d');
+      result = await fetchYahooChart(ticker, '2y', '1d');
       usedTicker = ticker;
       break;
     }catch(e){ lastErr = e; }
@@ -863,11 +868,23 @@ async function fetchStockData(symbol){
   const last = candles[candles.length-1];
   const prev = candles[candles.length-2] || last;
 
-  // Yahoo 直接提供的即時資訊
+  // 用 K 線本身計算漲跌（避免 Yahoo chartPreviousClose 除息造成異常）
   const price     = meta.regularMarketPrice ?? last.close;
-  const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? prev.close;
-  const change    = +(price - prevClose).toFixed(2);
-  const changePct = +(change / prevClose * 100).toFixed(2);
+  // 前收：優先用前一根 K 線收盤（最準確）
+  const prevClose = prev.close;
+  let change    = +(price - prevClose).toFixed(2);
+  let changePct = +(change / prevClose * 100).toFixed(2);
+
+  // 台灣上市櫃漲跌幅限制 ±10%（興櫃無限制）
+  // 若超過 ±10.5% 表示資料異常（例如除息、分割），改用今日開高低均值估算
+  if(Math.abs(changePct) > 10.5){
+    // 改用今日 open 計算
+    const dayChange  = +(price - last.open).toFixed(2);
+    const dayPct     = +(dayChange / last.open * 100).toFixed(2);
+    // 若仍異常，用前日收和今日收的漲跌，但截斷顯示
+    change    = Math.abs(dayPct) < 10.5 ? dayChange : change;
+    changePct = Math.abs(dayPct) < 10.5 ? dayPct : changePct;
+  }
 
   // 成交量（台股以張計）
   const volume    = meta.regularMarketVolume
@@ -934,7 +951,7 @@ function readParams(){
   const n = id => parseInt($(id)?.value)||0;
   const b = id => $(id)?.checked ?? true;
   STATE.params = {
-    ma1:n('p-ma1')||5,  ma2:n('p-ma2')||20, ma3:n('p-ma3')||60,
+    ma1:n('p-ma1')||5,  ma2:n('p-ma2')||20, ma3:n('p-ma3')||60, ma4:n('p-ma4')||240,
     kdN:n('p-kd-n')||9, kdM1:n('p-kd-m1')||3, kdM2:n('p-kd-m2')||3,
     macdFast:n('p-mf')||12, macdSlow:n('p-ms')||26, macdSignal:n('p-mg')||9,
     rsi:n('p-rsi')||14, volMA:n('p-vma')||5,
@@ -944,7 +961,7 @@ function readParams(){
 }
 
 function resetParams(){
-  [['p-ma1',5],['p-ma2',20],['p-ma3',60],
+  [['p-ma1',5],['p-ma2',20],['p-ma3',60],['p-ma4',240],
    ['p-kd-n',9],['p-kd-m1',3],['p-kd-m2',3],
    ['p-mf',12],['p-ms',26],['p-mg',9],
    ['p-rsi',14],['p-vma',5]
@@ -1184,11 +1201,13 @@ function renderAllCharts(candles, meta){
   const ma1=calcMA(closes,p.ma1);
   const ma2=calcMA(closes,p.ma2);
   const ma3=calcMA(closes,p.ma3);
+  const ma4=calcMA(closes,p.ma4);
 
   // 更新圖例
   setText('ma1-legend',`MA${p.ma1}: ${ma1[n]??'—'}`);
   setText('ma2-legend',`MA${p.ma2}: ${ma2[n]??'—'}`);
   setText('ma3-legend',`MA${p.ma3}: ${ma3[n]??'—'}`);
+  setText('ma4-legend',`MA${p.ma4}: ${ma4[n]??'—'}`);
   setText('kd-chart-label',   `KD(${p.kdN},${p.kdM1},${p.kdM2})`);
   setText('macd-chart-label', `MACD(${p.macdFast},${p.macdSlow},${p.macdSignal})`);
   setText('candle-count', candles.length);
@@ -1415,11 +1434,13 @@ function renderAllCharts(candles, meta){
   const volRatio=+(lastVol/avgVol5).toFixed(2);
 
   // MA 排列
-  const ma1v=ma1[n], ma2v=ma2[n], ma3v=ma3[n];
+  const ma1v=ma1[n], ma2v=ma2[n], ma3v=ma3[n], ma4v=ma4[n];
   const maRank = ma1v&&ma2v&&ma3v
     ? (ma1v>ma2v&&ma2v>ma3v ? 'bull'
     : ma1v<ma2v&&ma2v<ma3v ? 'bear' : 'flat')
     : 'flat';
+  // 年線多空判斷
+  const aboveMA4 = ma4v ? closes[n] > ma4v : null;
 
   // KD 交叉（近5根）
   let kdCross='', kdCrossDate='';
@@ -1709,7 +1730,7 @@ function renderAllCharts(candles, meta){
         axisLabel:{show:false}, splitLine:{show:false},
         axisPointer:{label:{show:true, backgroundColor:'#1c2535',
           formatter:p=>labels[p.value]||''}} },
-      yAxis:{ min:v=>+(v.min*.988).toFixed(1), max:v=>+(v.max*1.012).toFixed(1),
+      yAxis:{ scale:true,
         position:'right', axisLabel:{color:'#8494b0',fontSize:8},
         splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}} },
       grid:{ top:20, bottom:28, left:8, right:62 },
@@ -1738,6 +1759,8 @@ function renderAllCharts(candles, meta){
           lineStyle:{color:'#4a90e2',width:1.2} },
         { name:`MA${p.ma3}`, type:'line', data:ma3, symbol:'none', z:4,
           lineStyle:{color:'#9b72f5',width:1.2} },
+        { name:`MA${p.ma4}`, type:'line', data:ma4, symbol:'none', z:4,
+          lineStyle:{color:'#e84545',width:1.5,type:'dashed'} },
         // 最新收盤價水平線 + 標籤
         { name:'最新價', type:'scatter', data:[], z:20, silent:true,
           markLine:{ silent:true, symbol:'none',
@@ -1765,12 +1788,13 @@ function renderAllCharts(candles, meta){
           const m1=ma1[i]!=null?`MA${p.ma1} <b style="color:#f59e0b">${ma1[i]}</b>`:'';
           const m2=ma2[i]!=null?`MA${p.ma2} <b style="color:#4a90e2">${ma2[i]}</b>`:'';
           const m3=ma3[i]!=null?`MA${p.ma3} <b style="color:#9b72f5">${ma3[i]}</b>`:'';
+          const m4=ma4[i]!=null?`MA${p.ma4} <b style="color:#e84545">${ma4[i]}</b>`:'';
           return `<div style="font-family:Consolas,monospace;font-size:10px">
             <b style="color:#dde4f0">${c.time}</b><br>
             開 ${c.open}　高 <span style="color:#e84545">${c.high}</span>　低 <span style="color:#1db85a">${c.low}</span><br>
             收 <span style="color:${dc};font-weight:700">${c.close}</span>　<span style="color:${dc}">${chgStr}</span><br>
             量 ${c.volume.toLocaleString()}張<br>
-            ${[m1,m2,m3].filter(Boolean).join('　')}
+            ${[m1,m2,m3,m4].filter(Boolean).join('　')}
           </div>`;
         }},
     }, true);
