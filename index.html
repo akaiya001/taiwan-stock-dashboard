@@ -1061,28 +1061,15 @@ async function fetchStockData(symbol){
   const last = candles[candles.length-1];
   const prev = candles[candles.length-2] || last;
 
-  // 用 K 線本身計算漲跌（避免 Yahoo chartPreviousClose 除息造成異常）
-  const price     = meta.regularMarketPrice ?? last.close;
-  // 前收：優先用前一根 K 線收盤（最準確）
+  // 使用昨日（最後一根K線）收盤價，不取即時盤中價
+  const price     = last.close;
+  // 前收：前一根 K 線收盤
   const prevClose = prev.close;
   let change    = +(price - prevClose).toFixed(2);
   let changePct = +(change / prevClose * 100).toFixed(2);
 
-  // 台灣上市櫃漲跌幅限制 ±10%（興櫃無限制）
-  // 若超過 ±10.5% 表示資料異常（例如除息、分割），改用今日開高低均值估算
-  if(Math.abs(changePct) > 10.5){
-    // 改用今日 open 計算
-    const dayChange  = +(price - last.open).toFixed(2);
-    const dayPct     = +(dayChange / last.open * 100).toFixed(2);
-    // 若仍異常，用前日收和今日收的漲跌，但截斷顯示
-    change    = Math.abs(dayPct) < 10.5 ? dayChange : change;
-    changePct = Math.abs(dayPct) < 10.5 ? dayPct : changePct;
-  }
-
-  // 成交量（台股以張計）
-  const volume    = meta.regularMarketVolume
-    ? Math.round(meta.regularMarketVolume/1000)
-    : last.volume;
+  // 成交量（昨日K線，台股以張計）
+  const volume    = last.volume;
 
   // 內外盤比（Yahoo 沒有直接提供，用近5日統計估算）
   const recentCandles = candles.slice(-5);
@@ -1120,10 +1107,10 @@ async function fetchStockData(symbol){
       time:          timeStr,
       price,
       change, changePct,
-      open:          meta.regularMarketOpen  ?? last.open,
-      high:          meta.regularMarketDayHigh ?? last.high,
-      low:           meta.regularMarketDayLow  ?? last.low,
-      close:         price,
+      open:          last.open,   // 昨日開盤
+      high:          last.high,   // 昨日最高
+      low:           last.low,    // 昨日最低
+      close:         price,       // 昨日收盤
       volume,
       turnover,
       internalRatio: irEst,
@@ -2952,7 +2939,22 @@ function renderAllCharts(candles, meta){
         { name:'HL', type:'bar',
           data:candles.map(c=>c.high-c.low),
           base:candles.map(c=>c.low),
-          itemStyle:{color:(_,i)=>cClr[i]}, barMaxWidth:2, z:2 },
+          itemStyle:{color:(_,i)=>cClr[i]}, barMaxWidth:2, z:2,
+          markPoint:{ silent:true, symbolSize:1,
+            label:{ fontSize:9, fontWeight:700, fontFamily:'Consolas,monospace',
+              color:'#fff', padding:[2,5], borderRadius:2 },
+            data:[
+              { name:'最高', coord:[candles.reduce((a,c,i,arr)=>c.high>arr[a].high?i:a,0), candles.reduce((a,c)=>Math.max(a,c.high),0)],
+                value:candles.reduce((a,c)=>Math.max(a,c.high),0).toFixed(1),
+                symbol:'triangle', symbolSize:8, symbolOffset:[0,-2],
+                itemStyle:{color:'#e84545'},
+                label:{color:'#fff', backgroundColor:'#e84545', formatter:p=>'▲ '+p.value, position:'top'} },
+              { name:'最低', coord:[candles.reduce((a,c,i,arr)=>c.low<arr[a].low?i:a,0), candles.reduce((a,c)=>Math.min(a,c.low),Infinity)],
+                value:candles.reduce((a,c)=>Math.min(a,c.low),Infinity).toFixed(1),
+                symbol:'triangle', symbolSize:8, symbolRotate:180, symbolOffset:[0,2],
+                itemStyle:{color:'#1db85a'},
+                label:{color:'#fff', backgroundColor:'#1db85a', formatter:p=>'▼ '+p.value, position:'bottom'} },
+            ]} },
         { name:'OC', type:'bar',
           data:candles.map(c=>Math.max(Math.abs(c.close-c.open),.1)),
           base:candles.map(c=>Math.min(c.open,c.close)),
