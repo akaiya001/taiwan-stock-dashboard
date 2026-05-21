@@ -36,6 +36,8 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 .btn{border:none;border-radius:4px;cursor:pointer;font-family:var(--ui);font-size:13px;font-weight:600;padding:7px 14px;transition:opacity .15s;white-space:nowrap;}
 .btn:hover{opacity:.82;} .btn:disabled{opacity:.35;cursor:default;}
 .btn-primary  {background:var(--cyan);color:#000;}
+.btn-cyan{background:rgba(34,211,238,.15);border-color:var(--cyan);color:var(--cyan);}
+.btn-cyan:hover{background:var(--cyan);color:#0d1117;}
 .btn-secondary{background:var(--bg4);border:1px solid var(--bd2);color:var(--tx2);}
 .btn-amber    {background:var(--amber);color:#000;}
 
@@ -121,6 +123,10 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 .ma-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 .ma-item{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;}
 .ma-dot{width:18px;height:2px;border-radius:1px;flex-shrink:0;}
+.zoom-btn{background:var(--bg2);border:1px solid var(--bd1);border-radius:3px;
+  color:var(--tx3);font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;
+  transition:background .15s,color .15s;font-family:var(--mono);}
+.zoom-btn:hover,.zoom-btn.active{background:var(--cyan);border-color:var(--cyan);color:#0d1117;}
 .toolbar-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 .toolbar-info{font-family:var(--mono);font-size:10px;color:var(--tx4);}
 .toolbar-info b{color:var(--tx2);}
@@ -423,6 +429,13 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
       <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#4a5c7a">
         <input type="checkbox" id="toggle-sr" checked onchange="recomputeAndRender()" style="accent-color:#22d3ee">支撐壓力
       </label>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <span style="font-size:10px;color:#4a5c7a;margin-right:2px">K棒範圍</span>
+      <button class="zoom-btn" onclick="zoomChart(30)"  title="近30根">30</button>
+      <button class="zoom-btn" onclick="zoomChart(60)"  title="近60根">60</button>
+      <button class="zoom-btn" onclick="zoomChart(120)" title="近120根">120</button>
+      <button class="zoom-btn" onclick="zoomChart(0)"   title="全部顯示">全</button>
     </div>
     <div class="toolbar-right">
       <span class="toolbar-info">RSI: <b id="toolbar-rsi">—</b></span>
@@ -873,8 +886,10 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
   <div class="param-card" style="display:flex;flex-direction:column;justify-content:flex-end">
     <div class="param-btn-row">
       <button class="btn btn-amber"     onclick="recomputeAndRender()">重新計算</button>
-      <button class="btn btn-secondary" onclick="resetParams()">重設預設</button>
+      <button class="btn btn-cyan"      onclick="saveParamsAsDefault()" title="將目前設定存為下次開啟的預設值">💾 儲存預設</button>
+      <button class="btn btn-secondary" onclick="resetParams()">恢復出廠</button>
     </div>
+    <div id="param-save-toast" style="display:none;font-size:10px;color:var(--cyan);margin-top:4px;text-align:center">✅ 已儲存為預設值</div>
   </div>
 </div><!-- /param-section -->
 
@@ -1148,6 +1163,15 @@ async function fetchStockData(symbol){
 // ══════════════════════════════════════════
 // 參數讀取 / 重設
 // ══════════════════════════════════════════
+// 出廠預設值
+const FACTORY_PARAMS = {
+  ma1:5, ma2:20, ma3:60, ma4:240,
+  kdN:9, kdM1:3, kdM2:3,
+  macdFast:12, macdSlow:26, macdSignal:9,
+  rsi:14, volMA:5,
+  detectW:true, detectM:true, detectSR:true, detectMARank:true, detectVolSig:true,
+};
+
 function readParams(){
   const n = id => parseInt($(id)?.value)||0;
   const b = id => $(id)?.checked ?? true;
@@ -1159,6 +1183,32 @@ function readParams(){
     detectW:b('p-w'), detectM:b('p-m'), detectSR:b('p-sr'),
     detectMARank:b('p-ma-rank'), detectVolSig:b('p-vol-sig'),
   };
+}
+
+// 將儲存的預設值填入輸入框
+function applyParamsToInputs(p){
+  [['p-ma1',p.ma1],['p-ma2',p.ma2],['p-ma3',p.ma3],['p-ma4',p.ma4],
+   ['p-kd-n',p.kdN],['p-kd-m1',p.kdM1],['p-kd-m2',p.kdM2],
+   ['p-mf',p.macdFast],['p-ms',p.macdSlow],['p-mg',p.macdSignal],
+   ['p-rsi',p.rsi],['p-vma',p.volMA]
+  ].forEach(([id,v])=>{ const e=$(id); if(e) e.value=v; });
+  [['p-w',p.detectW],['p-m',p.detectM],['p-sr',p.detectSR],
+   ['p-ma-rank',p.detectMARank],['p-vol-sig',p.detectVolSig]
+  ].forEach(([id,v])=>{ const e=$(id); if(e) e.checked=v; });
+}
+
+// 儲存目前設定為預設值
+function saveParamsAsDefault(){
+  readParams();
+  try{ localStorage.setItem('techboard_params', JSON.stringify(STATE.params)); }catch(_){}
+  const toast = $('param-save-toast');
+  if(toast){ toast.style.display='block'; setTimeout(()=>toast.style.display='none', 2000); }
+}
+
+// 恢復出廠預設
+function resetParams(){
+  applyParamsToInputs(FACTORY_PARAMS);
+  try{ localStorage.removeItem('techboard_params'); }catch(_){}
 }
 
 function resetParams(){
@@ -2283,7 +2333,7 @@ function initCharts(){
       backgroundColor:'#1c2535', borderColor:'#2c3a52',
       textStyle:{color:'#dde4f0',fontSize:11} },
     dataZoom:[
-      { type:'inside', start:0, end:100, zoomLock:false },
+      { type:'inside', start:0, end:100, zoomLock:false, zoomOnMouseWheel:false, moveOnMouseWheel:false, preventDefaultMouseMove:false },
     ],
     series:[],
   };
@@ -2303,7 +2353,7 @@ function initCharts(){
     const dz=opt?.dataZoom?.[0];
     if(!dz) return;
     ['vol','kd','macd','rsi'].forEach(id=>{
-      CHARTS[id]?.setOption({dataZoom:[{type:'inside',start:dz.start,end:dz.end}]});
+      CHARTS[id]?.setOption({dataZoom:[{type:'inside',start:dz.start,end:dz.end,zoomOnMouseWheel:false,moveOnMouseWheel:false}]});
     });
   });
 }
@@ -2405,6 +2455,27 @@ function renderHeader(meta){
 // ══════════════════════════════════════════
 // 主流程
 // ══════════════════════════════════════════
+// K線縮放按鈕
+function zoomChart(n){
+  const total = STATE.rawData?.candles?.length || 500;
+  let start, end;
+  if(n === 0){ start = 0; end = 100; }
+  else {
+    end   = 100;
+    start = Math.max(0, Math.round((1 - n / total) * 100));
+  }
+  const dz = {type:'inside',start,end,zoomOnMouseWheel:false,moveOnMouseWheel:false};
+  ['main','vol','kd','macd','rsi'].forEach(id=>{
+    CHARTS[id]?.setOption({dataZoom:[dz]},false);
+  });
+  // slider 同步
+  CHARTS.main?.setOption({dataZoom:[dz, {type:'slider',start,end}]},false);
+  // active 樣式
+  document.querySelectorAll('.zoom-btn').forEach(b=>{
+    b.classList.toggle('active', b.textContent.trim()===(n===0?'全':String(n)));
+  });
+}
+
 function recomputeAndRender(){
   if(!STATE.rawData) return;
   readParams();
@@ -2524,7 +2595,7 @@ function renderAllCharts(candles, meta){
       axisLabel:{ color:'#4a5c7a', fontSize:8,
         formatter:v=>v>=10000?(v/10000).toFixed(0)+'w':v } },
     grid:{ top:20, bottom:6, left:52, right:12 },
-    dataZoom:[{type:'inside',start:0,end:100}],
+    dataZoom:[{type:'inside',start:0,end:100,zoomOnMouseWheel:false,moveOnMouseWheel:false}],
     series:[
       { name:'量',  type:'bar',
         data:vols.map((v,i)=>({value:v,itemStyle:{color:volClr[i]}})),
@@ -2548,7 +2619,7 @@ function renderAllCharts(candles, meta){
       splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
       axisLabel:{color:'#4a5c7a',fontSize:8} },
     grid:{ top:20, bottom:6, left:52, right:12 },
-    dataZoom:[{type:'inside',start:0,end:100}],
+    dataZoom:[{type:'inside',start:0,end:100,zoomOnMouseWheel:false,moveOnMouseWheel:false}],
     series:[
       { name:'K', type:'line', data:kdK, symbol:'none',
         lineStyle:{color:'#f59e0b',width:1.3} },
@@ -2585,7 +2656,7 @@ function renderAllCharts(candles, meta){
     yAxis:{ splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
       axisLabel:{color:'#4a5c7a',fontSize:8} },
     grid:{ top:20, bottom:6, left:52, right:12 },
-    dataZoom:[{type:'inside',start:0,end:100}],
+    dataZoom:[{type:'inside',start:0,end:100,zoomOnMouseWheel:false,moveOnMouseWheel:false}],
     series:[
       { name:'DIF',  type:'line', data:dif, symbol:'none',
         lineStyle:{color:'#f59e0b',width:1.3} },
@@ -2618,7 +2689,7 @@ function renderAllCharts(candles, meta){
       splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
       axisLabel:{color:'#4a5c7a',fontSize:8} },
     grid:{ top:20, bottom:26, left:52, right:12 },
-    dataZoom:[{type:'inside',start:0,end:100}],
+    dataZoom:[{type:'inside',start:0,end:100,zoomOnMouseWheel:false,moveOnMouseWheel:false}],
     series:[
       { name:'超買帶', type:'line', data:rsiArr.map(()=>rsiOB), symbol:'none', z:1,
         lineStyle:{color:'rgba(232,69,69,.3)',width:1,type:'dashed'},
@@ -2977,7 +3048,7 @@ function renderAllCharts(candles, meta){
         splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}} },
       grid:{ top:20, bottom:28, left:8, right:62 },
       dataZoom:[
-        {type:'inside', start:0, end:100, zoomLock:false},
+        {type:'inside', start:0, end:100, zoomLock:false, zoomOnMouseWheel:false, moveOnMouseWheel:false},
         {type:'slider', height:18, bottom:2, borderColor:'#1a2130',
           backgroundColor:'#0d1117', fillerColor:'rgba(34,211,238,.08)',
           handleStyle:{color:'#22d3ee'}, textStyle:{color:'#4a5c7a',fontSize:8},
@@ -3673,6 +3744,14 @@ function renderAllCharts(candles, meta){
 // 啟動
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', ()=>{
+  // 載入使用者儲存的參數預設值
+  try{
+    const saved = localStorage.getItem('techboard_params');
+    if(saved){
+      const p = JSON.parse(saved);
+      applyParamsToInputs({...FACTORY_PARAMS, ...p});
+    }
+  }catch(_){}
   initCharts();
   queryStock();
   setInterval(setTime, 1000);
