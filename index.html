@@ -15,7 +15,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 ::-webkit-scrollbar-thumb{background:var(--bd3);border-radius:2px;}
 
 /* ── Variables ── */
-:root{
+:root,[data-theme="dark"]{
   --bg0:#080b0f; --bg1:#0d1117; --bg2:#111820;
   --bg3:#161e2a; --bg4:#1c2535;
   --bd1:#1a2130; --bd2:#222e42; --bd3:#2c3a52;
@@ -28,8 +28,24 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
   --ma1:#f59e0b; --ma2:#4a90e2; --ma3:#9b72f5; --ma4:#e84545;
   --mono:'JetBrains Mono','Consolas',monospace;
   --ui:'Noto Sans TC',-apple-system,sans-serif;
-  --topbar-h:52px;
-  --card-radius:6px;
+  --topbar-h:52px; --card-radius:6px;
+  --chart-bg:#0d1117;
+}
+[data-theme="light"]{
+  --bg0:#f0f2f5; --bg1:#ffffff; --bg2:#f5f7fa;
+  --bg3:#eaecf0; --bg4:#dde1e8;
+  --bd1:#d0d6e0; --bd2:#b8c0cc; --bd3:#9aa5b8;
+  --tx1:#1a2235; --tx2:#4a5568; --tx3:#718096; --tx4:#a0aec0;
+  --up:#c0392b; --up2:#e57373; --upbg:#fdecea;
+  --dn:#1a7a40; --dn2:#4caf50; --dnbg:#e8f5e9;
+  --flat:#718096;
+  --cyan:#0891b2; --blue:#2563eb;
+  --amber:#d97706; --purple:#7c3aed;
+  --ma1:#d97706; --ma2:#2563eb; --ma3:#7c3aed; --ma4:#c0392b;
+  --mono:'JetBrains Mono','Consolas',monospace;
+  --ui:'Noto Sans TC',-apple-system,sans-serif;
+  --topbar-h:52px; --card-radius:6px;
+  --chart-bg:#ffffff;
 }
 
 /* ── Buttons ── */
@@ -123,6 +139,72 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 .ma-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 .ma-item{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;}
 .ma-dot{width:18px;height:2px;border-radius:1px;flex-shrink:0;}
+.theme-toggle{
+  display:flex;align-items:center;gap:2px;
+  background:var(--bg2);border:1px solid var(--bd2);border-radius:20px;
+  padding:3px 4px;cursor:pointer;
+}
+.theme-btn{
+  width:26px;height:22px;border-radius:16px;border:none;cursor:pointer;
+  font-size:13px;display:flex;align-items:center;justify-content:center;
+  background:transparent;color:var(--tx3);transition:background .2s,color .2s;
+}
+.theme-btn.active{background:var(--cyan);color:#fff;}
+[data-theme="light"] .theme-btn.active{background:var(--amber);color:#fff;}
+[data-theme="light"] body{background:var(--bg0);color:var(--tx1);}
+[data-theme="light"] .topbar{background:var(--bg1);border-color:var(--bd2);}
+[data-theme="light"] .topbar-logo{color:var(--cyan);}
+[data-theme="light"] .topbar-input{background:var(--bg0);border-color:var(--bd2);color:var(--tx1);}
+[data-theme="light"] .card,[data-theme="light"] .bcard,[data-theme="light"] .fin-chart-card,[data-theme="light"] .fin-table-card,[data-theme="light"] .param-card{background:var(--bg1);border-color:var(--bd2);}
+[data-theme="light"] .chart-wrap{background:var(--bg1);border-color:var(--bd2);}
+[data-theme="light"] .section-hd{background:var(--bg2);border-color:var(--bd1);}
+[data-theme="light"] .section-title,[data-theme="light"] .fin-chart-title,[data-theme="light"] #topbar-sname,[data-theme="light"] .qb-name{color:var(--tx1);}
+[data-theme="light"] .quote-bar,[data-theme="light"] .conclusion-bar,[data-theme="light"] .analysis-card{background:var(--bg1);border-color:var(--bd2);}
+[data-theme="light"] .fin-tab{background:var(--bg2);border-color:var(--bd2);color:var(--tx2);}
+[data-theme="light"] .status-badge.live{background:#e8f5e9;color:var(--dn);border-color:var(--dn2);}
+[data-theme="light"] .param-inp{background:var(--bg0);border-color:var(--bd2);color:var(--tx1);}
+[data-theme="light"] .topbar-time,[data-theme="light"] .qb-label,[data-theme="light"] .chart-label{color:var(--tx3);}
+[data-theme="light"] .chart-label{background:var(--bg2);}
+[data-theme="light"] .zoom-btn{background:var(--bg2);border-color:var(--bd2);color:var(--tx2);}
+[data-theme="light"] .score-star,[data-theme="light"] .badge-text{color:var(--tx1);}
+
+.fin-section{padding:6px;display:flex;flex-direction:column;gap:6px;}
+.fin-header{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--card-radius);padding:10px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.fin-header-title{font-size:15px;font-weight:700;color:var(--tx1);}
+.fin-header-sub{font-size:11px;color:var(--tx3);margin-top:2px;}
+.fin-kpi-row{display:flex;gap:6px;flex-wrap:wrap;}
+.fin-kpi{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--card-radius);padding:8px 12px;flex:1;min-width:80px;}
+.fin-kpi-lbl{font-size:10px;color:var(--tx3);}
+.fin-kpi-val{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--tx1);}
+.fin-kpi-val.up{color:var(--up);} .fin-kpi-val.dn{color:var(--dn);} .fin-kpi-val.cyan{color:var(--cyan);}
+.fin-charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.fin-chart-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--card-radius);padding:10px 12px;}
+.fin-chart-title{font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.fin-chart-title span{font-size:9px;color:var(--tx4);font-weight:400;}
+.fin-chart-wrap{height:200px;}
+.fin-table-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--card-radius);padding:10px 12px;overflow-x:auto;}
+.fin-table{width:100%;border-collapse:collapse;font-size:11px;}
+.fin-table th{text-align:right;padding:5px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd1);white-space:nowrap;}
+.fin-table th:first-child{text-align:left;}
+.fin-table td{text-align:right;padding:5px 8px;color:var(--tx2);border-bottom:1px solid var(--bg3);font-family:var(--mono);font-size:11px;white-space:nowrap;}
+.fin-table td:first-child{text-align:left;color:var(--tx1);font-family:var(--ui);font-weight:600;}
+.fin-table tr:last-child td{border-bottom:none;}
+.fin-table .up{color:var(--up);} .fin-table .dn{color:var(--dn);}
+.fin-loading{display:flex;align-items:center;justify-content:center;height:80px;color:var(--tx4);font-size:13px;gap:8px;}
+.fin-spinner{width:16px;height:16px;border:2px solid var(--bd2);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;}
+.fin-tab-bar{display:flex;gap:4px;padding:2px 0 4px;}
+.fin-tab{background:var(--bg2);border:1px solid var(--bd1);border-radius:4px;color:var(--tx3);font-size:11px;font-weight:600;padding:5px 16px;cursor:pointer;transition:background .15s,color .15s;}
+.fin-tab:hover{background:var(--bg3);color:var(--tx2);}
+.fin-tab.active{background:var(--cyan);border-color:var(--cyan);color:#0d1117;}
+.fin-tab-panel{display:flex;flex-direction:column;gap:6px;}
+/* FinMind Token Bar */
+.fin-token-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--bg1);border:1px solid var(--bd2);border-radius:var(--card-radius);
+  padding:10px 14px;margin:0 6px 6px;}
+[data-theme="light"] .fin-token-bar{background:var(--bg1);border-color:var(--bd2);}
+[data-theme="light"] .fin-chart-card,[data-theme="light"] .fin-table-card,
+[data-theme="light"] .fin-kpi,[data-theme="light"] .fin-header{background:var(--bg1);border-color:var(--bd2);}
+[data-theme="light"] .fin-chart-title,[data-theme="light"] .fin-header-title{color:var(--tx1);}
 .zoom-btn{background:var(--bg2);border:1px solid var(--bd1);border-radius:3px;
   color:var(--tx3);font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;
   transition:background .15s,color .15s;font-family:var(--mono);}
@@ -246,50 +328,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 /* ══════════════════════════════════════
    財報區塊樣式
 ══════════════════════════════════════ */
-.fin-section{padding:6px;display:flex;flex-direction:column;gap:6px;}
-.fin-header{
-  background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--card-radius);
-  padding:10px 14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-}
-.fin-header-title{font-size:15px;font-weight:700;color:var(--tx1);}
-.fin-header-sub{font-size:11px;color:var(--tx3);}
-.fin-kpi-row{display:flex;gap:6px;flex-wrap:wrap;}
-.fin-kpi{
-  background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--card-radius);
-  padding:10px 14px;flex:1;min-width:120px;display:flex;flex-direction:column;gap:3px;
-}
-.fin-kpi-lbl{font-size:10px;color:var(--tx3);}
-.fin-kpi-val{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--tx1);}
-.fin-kpi-val.up{color:var(--up);} .fin-kpi-val.dn{color:var(--dn);} .fin-kpi-val.cyan{color:var(--cyan);}
-.fin-kpi-sub{font-size:10px;color:var(--tx3);}
-.fin-charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-.fin-chart-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--card-radius);padding:10px 12px;}
-.fin-chart-title{font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
-.fin-chart-title span{font-size:9px;color:var(--tx4);font-weight:400;}
-.fin-chart-wrap{height:200px;}
-.fin-table-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--card-radius);padding:10px 12px;overflow-x:auto;}
-.fin-table{width:100%;border-collapse:collapse;font-size:11px;}
-.fin-table th{text-align:right;padding:5px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd1);white-space:nowrap;}
-.fin-table th:first-child{text-align:left;}
-.fin-table td{text-align:right;padding:5px 8px;color:var(--tx2);border-bottom:1px solid var(--bg3);font-family:var(--mono);font-size:11px;white-space:nowrap;}
-.fin-table td:first-child{text-align:left;color:var(--tx1);font-family:var(--ui);font-weight:600;}
-.fin-table tr:last-child td{border-bottom:none;}
-.fin-table .up{color:var(--up);} .fin-table .dn{color:var(--dn);}
-.fin-source{font-size:9px;color:var(--tx4);text-align:right;margin-top:4px;}
-.fin-loading{display:flex;align-items:center;justify-content:center;height:120px;color:var(--tx4);font-size:13px;gap:8px;}
-.fin-spinner{width:16px;height:16px;border:2px solid var(--bd2);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
-#fin-mq-grid{display:none;}
-/* 財報 Tab */
-.fin-tab-bar{display:flex;gap:4px;padding:2px 0 6px;}
-.fin-tab{background:var(--bg2);border:1px solid var(--bd1);border-radius:4px;
-  color:var(--tx3);font-size:11px;font-weight:600;padding:5px 16px;cursor:pointer;
-  transition:background .15s,color .15s,border-color .15s;}
-.fin-tab:hover{background:var(--bg3);color:var(--tx2);}
-.fin-tab.active{background:var(--cyan);border-color:var(--cyan);color:#0d1117;}
-.fin-tab-panel{display:flex;flex-direction:column;gap:6px;}
-#fin-monthly-table-card{display:none;}
-#fin-quarterly-table-card{display:none;}
+
 @media(max-width:767px){.fin-charts-grid{grid-template-columns:1fr;} .fin-kpi{min-width:100px;}}
 @media(max-width:1199px){.fin-charts-grid{grid-template-columns:1fr 1fr;}}
 ══════════════════════════════════════ */
@@ -356,6 +395,10 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
     <div class="tohlcv-item"><span class="tohlcv-lbl">日期</span><span class="tohlcv-val" id="th-date">—</span></div>
   </div>
   <div class="topbar-right">
+    <div class="theme-toggle" title="切換深色/淺色模式">
+      <button class="theme-btn active" id="btn-dark"  onclick="setTheme('dark')" title="深色">🌙</button>
+      <button class="theme-btn"        id="btn-light" onclick="setTheme('light')" title="淺色">☀️</button>
+    </div>
     <span class="status-badge live" id="status-badge">LIVE</span>
     <span class="topbar-time" id="topbar-time">--:--:--</span>
   </div>
@@ -699,130 +742,106 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 
 </div><!-- /analysis-section -->
 
-<!-- ⑤ 財報分析區塊 -->
-<div class="fin-section" id="fin-section" style="display:none">
 
-  <!-- 財報標頭 -->
+<!-- ⑤ 財報分析區塊（FinMind API） -->
+<div class="fin-section" id="fin-section" style="display:none">
+  <!-- Header + KPI -->
   <div class="fin-header">
     <div>
-      <div class="fin-header-title" id="fin-title">財務報表分析</div>
-      <div class="fin-header-sub" id="fin-sub">載入中…</div>
-    </div>
-    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <div style="font-size:10px;color:var(--tx3)">資料來源</div>
-      <span style="font-size:10px;padding:2px 8px;background:var(--bg3);border:1px solid var(--bd2);border-radius:3px;color:var(--cyan)" id="fin-source-badge">Yahoo Finance</span>
+      <div class="fin-header-title">📊 財務分析 <span id="fin-stock-label" style="font-size:12px;color:var(--tx3);font-weight:400"></span></div>
+      <div class="fin-header-sub">資料來源：FinMind API &nbsp;|&nbsp; <span id="fin-source-badge" style="color:var(--cyan)">載入中…</span></div>
     </div>
   </div>
-
-  <!-- KPI 指標列 -->
   <div class="fin-kpi-row" id="fin-kpi-row">
-    <div class="fin-kpi"><div class="fin-kpi-lbl">本益比 P/E</div><div class="fin-kpi-val" id="fk-pe">—</div><div class="fin-kpi-sub" id="fk-pe-sub">—</div></div>
-    <div class="fin-kpi"><div class="fin-kpi-lbl">股價淨值比 P/B</div><div class="fin-kpi-val" id="fk-pb">—</div><div class="fin-kpi-sub" id="fk-pb-sub">—</div></div>
-    <div class="fin-kpi"><div class="fin-kpi-lbl">市值</div><div class="fin-kpi-val cyan" id="fk-mktcap">—</div><div class="fin-kpi-sub">億元</div></div>
-    <div class="fin-kpi"><div class="fin-kpi-lbl">殖利率</div><div class="fin-kpi-val up" id="fk-yield">—</div><div class="fin-kpi-sub" id="fk-yield-sub">—</div></div>
-    <div class="fin-kpi"><div class="fin-kpi-lbl">EPS（TTM）</div><div class="fin-kpi-val" id="fk-eps">—</div><div class="fin-kpi-sub">每股盈餘</div></div>
-    <div class="fin-kpi"><div class="fin-kpi-lbl">毛利率</div><div class="fin-kpi-val" id="fk-gm">—</div><div class="fin-kpi-sub" id="fk-gm-sub">—</div></div>
-    <div class="fin-kpi"><div class="fin-kpi-lbl">ROE</div><div class="fin-kpi-val" id="fk-roe">—</div><div class="fin-kpi-sub">股東權益報酬率</div></div>
-    <div class="fin-kpi"><div class="fin-kpi-lbl">52週高低</div><div class="fin-kpi-val" id="fk-52w">—</div><div class="fin-kpi-sub" id="fk-52w-pos">—</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-lbl">本益比 P/E</div><div class="fin-kpi-val cyan" id="fk-pe">—</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-lbl">股價淨值比 P/B</div><div class="fin-kpi-val" id="fk-pb">—</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-lbl">殖利率</div><div class="fin-kpi-val up" id="fk-dy">—</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-lbl">EPS TTM</div><div class="fin-kpi-val" id="fk-eps">—</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-lbl">毛利率</div><div class="fin-kpi-val" id="fk-gm">—</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-lbl">ROE</div><div class="fin-kpi-val" id="fk-roe">—</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-lbl">52W 高</div><div class="fin-kpi-val up" id="fk-hi">—</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-lbl">52W 低</div><div class="fin-kpi-val dn" id="fk-lo">—</div></div>
   </div>
 
-  <!-- 財報 Tab 導覽 -->
+  <!-- Tab 導覽 -->
   <div class="fin-tab-bar" id="fin-tab-bar">
     <button class="fin-tab active" data-tab="quarterly" onclick="switchFinTab('quarterly')">季報</button>
     <button class="fin-tab" data-tab="monthly" onclick="switchFinTab('monthly')">月營收</button>
     <button class="fin-tab" data-tab="annual" onclick="switchFinTab('annual')">年報</button>
   </div>
 
-  <!-- ① 季報面板（預設顯示）-->
+  <!-- ① 季報面板 -->
   <div class="fin-tab-panel" id="fin-panel-quarterly">
     <div class="fin-charts-grid">
       <div class="fin-chart-card">
-        <div class="fin-chart-title">季營收 Quarterly Revenue <span>（億元）</span></div>
-        <div class="fin-chart-wrap" id="fin-chart-qrev" style="height:220px"></div>
+        <div class="fin-chart-title">季營收 <span>（百萬元）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-qrev" style="height:200px"></div>
       </div>
       <div class="fin-chart-card">
-        <div class="fin-chart-title">季EPS Quarterly EPS <span>（元）</span></div>
-        <div class="fin-chart-wrap" id="fin-chart-qeps" style="height:220px"></div>
+        <div class="fin-chart-title">季EPS <span>（元）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-qeps" style="height:200px"></div>
       </div>
       <div class="fin-chart-card">
-        <div class="fin-chart-title">季毛利率 / 營益率 <span>（%）</span></div>
-        <div class="fin-chart-wrap" id="fin-chart-qmargin" style="height:220px"></div>
+        <div class="fin-chart-title">毛利率 / 營益率 <span>（%）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-qmargin" style="height:200px"></div>
       </div>
       <div class="fin-chart-card">
-        <div class="fin-chart-title">季淨利 Quarterly Net Income <span>（億元）</span></div>
-        <div class="fin-chart-wrap" id="fin-chart-qni" style="height:220px"></div>
+        <div class="fin-chart-title">季淨利 <span>（百萬元）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-qni" style="height:200px"></div>
       </div>
     </div>
-    <div class="fin-table-card" id="fin-quarterly-table-card">
-      <div class="fin-chart-title" style="margin-bottom:8px">近12季財報摘要</div>
+    <div class="fin-table-card">
+      <div class="fin-chart-title" style="margin-bottom:8px">近8季財報摘要</div>
       <div id="fin-quarterly-table-wrap"><div class="fin-loading"><div class="fin-spinner"></div>載入中…</div></div>
     </div>
   </div>
 
-  <!-- ② 月營收面板（點選才顯示）-->
+  <!-- ② 月營收面板 -->
   <div class="fin-tab-panel" id="fin-panel-monthly" style="display:none">
     <div class="fin-charts-grid">
       <div class="fin-chart-card" style="grid-column:1/-1">
-        <div class="fin-chart-title">
-          每月營收 Monthly Revenue
-          <span id="fin-monthly-unit">（億元）</span>
+        <div class="fin-chart-title">每月營收 <span id="fin-monthly-unit">（百萬元）</span>
           <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
-            <span style="display:flex;align-items:center;gap:3px;font-size:9px;color:#22d3ee">
-              <span style="width:12px;height:2px;background:#22d3ee;display:inline-block;border-radius:1px"></span>月營收
-            </span>
-            <span style="display:flex;align-items:center;gap:3px;font-size:9px;color:#f59e0b">
-              <span style="width:12px;height:2px;background:#f59e0b;display:inline-block;border-radius:1px;border-top:1px dashed #f59e0b"></span>YoY%
-            </span>
+            <span style="font-size:9px;color:#22d3ee">▬ 月營收</span>
+            <span style="font-size:9px;color:#f59e0b">╌ YoY%</span>
           </div>
         </div>
-        <div class="fin-chart-wrap" id="fin-chart-monthly" style="height:240px"></div>
+        <div class="fin-chart-wrap" id="fin-chart-monthly" style="height:220px"></div>
       </div>
     </div>
-    <div class="fin-table-card" id="fin-monthly-table-card">
-      <div class="fin-chart-title" style="margin-bottom:8px">
-        近24月營收明細
-        <span id="fin-monthly-yoy-summary" style="font-size:10px;color:var(--tx3)"></span>
-      </div>
+    <div class="fin-table-card">
+      <div class="fin-chart-title" style="margin-bottom:8px">近24月營收明細</div>
       <div id="fin-monthly-table-wrap"><div class="fin-loading"><div class="fin-spinner"></div>載入中…</div></div>
     </div>
   </div>
 
-  <!-- ③ 年報面板（點選才渲染）-->
+  <!-- ③ 年報面板（lazy） -->
   <div class="fin-tab-panel" id="fin-panel-annual" style="display:none">
-    <div class="fin-charts-grid" id="fin-annual-charts-grid">
+    <div class="fin-charts-grid" id="fin-annual-grid">
       <div class="fin-chart-card">
-        <div class="fin-chart-title">營收 Revenue <span id="fin-rev-unit">（億元）</span></div>
+        <div class="fin-chart-title">年度營收 <span>（百萬元）</span></div>
         <div class="fin-chart-wrap" id="fin-chart-rev"></div>
       </div>
       <div class="fin-chart-card">
-        <div class="fin-chart-title">稅後淨利 Net Income <span id="fin-ni-unit">（億元）</span></div>
-        <div class="fin-chart-wrap" id="fin-chart-ni"></div>
-      </div>
-      <div class="fin-chart-card">
-        <div class="fin-chart-title">毛利率 / 營業利益率 <span>（%）</span></div>
-        <div class="fin-chart-wrap" id="fin-chart-margin"></div>
-      </div>
-      <div class="fin-chart-card">
-        <div class="fin-chart-title">EPS 每股盈餘 <span>（元）</span></div>
+        <div class="fin-chart-title">年度EPS <span>（元）</span></div>
         <div class="fin-chart-wrap" id="fin-chart-eps"></div>
       </div>
       <div class="fin-chart-card">
-        <div class="fin-chart-title">現金股利 Cash Dividend <span>（元/股）</span></div>
-        <div class="fin-chart-wrap" id="fin-chart-div"></div>
+        <div class="fin-chart-title">毛利率 / 營益率 <span>（%）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-margin"></div>
       </div>
       <div class="fin-chart-card">
-        <div class="fin-chart-title">ROE / ROA <span>（%）</span></div>
-        <div class="fin-chart-wrap" id="fin-chart-roe"></div>
+        <div class="fin-chart-title">現金股利 <span>（元/股）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-div"></div>
       </div>
-    </div>
-    <div class="fin-table-card">
-      <div class="fin-chart-title" style="margin-bottom:8px">年度財報摘要</div>
-      <div id="fin-table-wrap"><div class="fin-loading"><div class="fin-spinner"></div>載入財報資料中…</div></div>
-      <div class="fin-source" id="fin-table-source">—</div>
     </div>
   </div>
 
+  <div class="fin-loading" id="fin-loading-overlay" style="display:none">
+    <div class="fin-spinner"></div><span>財報載入中…</span>
+  </div>
 </div><!-- /fin-section -->
+
 
 <!-- ⑤ 參數設定 -->
 <div class="param-section">
@@ -892,6 +911,29 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
     <div id="param-save-toast" style="display:none;font-size:10px;color:var(--cyan);margin-top:4px;text-align:center">✅ 已儲存為預設值</div>
   </div>
 </div><!-- /param-section -->
+
+<!-- FinMind Token 設定 -->
+<div class="fin-token-bar" id="fin-token-bar">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--cyan)">🔑 FinMind Token</span>
+    <span style="font-size:10px;color:var(--tx3)">免費註冊取得 →</span>
+    <a href="https://finmindtrade.com/" target="_blank"
+       style="font-size:10px;color:var(--cyan);text-decoration:none">finmindtrade.com</a>
+    <span id="fin-token-status" style="font-size:10px;padding:2px 8px;border-radius:3px;
+      background:var(--bg3);color:var(--tx3);border:1px solid var(--bd2)">未設定</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:260px">
+    <input id="fin-token-input" type="password" placeholder="貼上 FinMind API Token…"
+      style="flex:1;background:var(--bg0);border:1px solid var(--bd2);border-radius:4px;
+        color:var(--tx1);font-family:var(--mono);font-size:12px;padding:6px 10px;outline:none;
+        transition:border-color .15s;min-width:0"
+      onfocus="this.style.borderColor='var(--cyan)'"
+      onblur="this.style.borderColor='var(--bd2)'"
+      onkeydown="if(event.key==='Enter')saveFinToken()">
+    <button class="btn btn-cyan" style="padding:6px 12px;font-size:12px" onclick="saveFinToken()">套用</button>
+    <button class="btn btn-secondary" style="padding:6px 10px;font-size:12px" onclick="clearFinToken()">清除</button>
+  </div>
+</div>
 
 <!-- ⑥ 全寬結論橫幅 -->
 <div class="conclusion-bar" id="concl-bar" style="display:none">
@@ -1151,6 +1193,10 @@ async function fetchStockData(symbol){
       marketCap,
       fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
       fiftyTwoWeekLow:  meta.fiftyTwoWeekLow,
+      pe:  meta.trailingPE       ?? null,
+      pb:  meta.priceToBook      ?? null,
+      dy:  meta.trailingAnnualDividendYield != null
+           ? +(meta.trailingAnnualDividendYield * 100).toFixed(2) : null,
       source: 'Yahoo Finance',
     },
     candles,
@@ -1227,1023 +1273,418 @@ function resetParams(){
 // 財報資料系統
 // ══════════════════════════════════════════
 
-// 精選台股財報資料庫（近5年真實數字，單位：億元／元）
-const FIN_DB = {
-  '2330':{ name:'台積電', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [15874, 22639, 21617],
-    netIncome:   [5965,  9064,  8789],
-    grossMargin: [51.6,  59.6,  54.4],
-    opMargin:    [40.5,  49.5,  42.6],
-    eps:         [23.01, 34.99, 32.34],
-    roe:         [29.7,  39.8,  26.5],
-    roa:         [19.8,  27.9,  17.4],
-    dividend:    [11.0,  13.0,  13.5],
-  },
-  '2317':{ name:'鴻海', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [59827, 62354, 62081],
-    netIncome:   [1144,  1155,  1281],
-    grossMargin: [6.2,   6.3,   6.5],
-    opMargin:    [3.0,   3.0,   3.2],
-    eps:         [8.01,  8.10,  8.96],
-    roe:         [13.2,  13.1,  13.9],
-    roa:         [4.2,   4.1,   4.5],
-    dividend:    [4.4,   4.5,   4.5],
-  },
-  '2454':{ name:'聯發科', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [4931,  5483,  4472],
-    netIncome:   [1176,  1054,  694],
-    grossMargin: [50.4,  49.4,  47.4],
-    opMargin:    [24.9,  20.4,  13.9],
-    eps:         [74.2,  66.4,  43.7],
-    roe:         [41.1,  33.7,  20.2],
-    roa:         [27.6,  22.4,  13.1],
-    dividend:    [64.0,  73.0,  40.0],
-  },
-  '2382':{ name:'廣達', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [10226, 11490, 14282],
-    netIncome:   [299,   320,   565],
-    grossMargin: [5.5,   5.6,   7.3],
-    opMargin:    [3.0,   3.0,   4.3],
-    eps:         [8.37,  8.96,  15.82],
-    roe:         [27.5,  26.3,  39.1],
-    roa:         [5.2,   4.9,   8.1],
-    dividend:    [7.5,   7.8,   14.0],
-  },
-  '2308':{ name:'台達電', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [3190,  3888,  3993],
-    netIncome:   [293,   280,   342],
-    grossMargin: [27.4,  25.8,  27.5],
-    opMargin:    [9.7,   8.3,   9.4],
-    eps:         [11.3,  10.8,  13.2],
-    roe:         [19.3,  17.2,  18.9],
-    roa:         [9.8,   8.5,   9.6],
-    dividend:    [8.5,   8.5,   10.0],
-  },
-  '2383':{ name:'台光電', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [298,   388,   402],
-    netIncome:   [48,    65,    72],
-    grossMargin: [22.3,  23.5,  24.8],
-    opMargin:    [14.8,  16.2,  17.0],
-    eps:         [15.2,  20.5,  22.8],
-    roe:         [22.5,  26.8,  27.3],
-    roa:         [14.2,  17.5,  18.1],
-    dividend:    [12.5,  16.0,  18.0],
-  },
-  '3017':{ name:'奇宏', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [145,   198,   268],
-    netIncome:   [18,    28,    45],
-    grossMargin: [18.5,  20.3,  23.8],
-    opMargin:    [11.2,  13.5,  16.2],
-    eps:         [4.82,  7.35,  11.82],
-    roe:         [18.3,  22.5,  29.8],
-    roa:         [11.5,  14.2,  19.5],
-    dividend:    [3.5,   5.5,   9.0],
-  },
-  '6669':{ name:'緯穎', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [2038,  2635,  3812],
-    netIncome:   [52,    73,    115],
-    grossMargin: [4.2,   4.5,   4.8],
-    opMargin:    [2.3,   2.6,   2.9],
-    eps:         [15.8,  22.1,  34.9],
-    roe:         [28.5,  32.8,  38.6],
-    roa:         [8.5,   9.8,   12.3],
-    dividend:    [12.0,  18.0,  28.0],
-  },
-  '2345':{ name:'智邦', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [338,   425,   512],
-    netIncome:   [38,    52,    68],
-    grossMargin: [19.8,  21.5,  22.8],
-    opMargin:    [10.5,  12.2,  13.0],
-    eps:         [9.52,  12.8,  16.5],
-    roe:         [20.5,  24.8,  28.5],
-    roa:         [13.5,  16.2,  18.8],
-    dividend:    [7.5,   10.0,  13.0],
-  },
-  '2303':{ name:'聯電', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [2004,  2528,  2241],
-    netIncome:   [548,   719,   535],
-    grossMargin: [34.8,  38.2,  32.5],
-    opMargin:    [26.2,  29.5,  23.8],
-    eps:         [4.38,  5.74,  4.28],
-    roe:         [20.8,  24.5,  17.5],
-    roa:         [14.5,  17.2,  11.8],
-    dividend:    [3.5,   4.0,   3.5],
-  },
-  '2412':{ name:'中華電', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [2270,  2312,  2358],
-    netIncome:   [368,   373,   380],
-    grossMargin: [30.2,  30.5,  31.0],
-    opMargin:    [16.5,  16.8,  17.2],
-    eps:         [4.76,  4.82,  4.92],
-    roe:         [12.5,  12.8,  13.1],
-    roa:         [5.8,   5.9,   6.1],
-    dividend:    [4.693, 4.502, 4.773],
-  },
-  '2886':{ name:'兆豐金', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [552,   638,   712],
-    netIncome:   [225,   256,   298],
-    grossMargin: [null,  null,  null],
-    opMargin:    [null,  null,  null],
-    eps:         [1.64,  1.87,  2.18],
-    roe:         [9.2,   10.5,  11.8],
-    roa:         [0.68,  0.78,  0.88],
-    dividend:    [1.50,  1.58,  1.75],
-  },
-  '6505':{ name:'台塑化', unit:'億元',
-    years:['2021','2022','2023'],
-    revenue:     [4658,  6182,  5235],
-    netIncome:   [422,   510,   198],
-    grossMargin: [13.5,  12.8,  6.8],
-    opMargin:    [9.8,   9.2,   4.5],
-    eps:         [5.08,  6.14,  2.38],
-    roe:         [14.8,  17.2,  6.5],
-    roa:         [7.5,   8.8,   3.2],
-    dividend:    [4.5,   4.5,   3.0],
-  },
-  '0050':{ name:'元大台灣50', unit:'元', isETF:true,
-    years:['2021','2022','2023'],
-    revenue:     [null,  null,  null],
-    netIncome:   [null,  null,  null],
-    grossMargin: [null,  null,  null],
-    opMargin:    [null,  null,  null],
-    eps:         [19.76, -6.44, 14.22],
-    roe:         [null,  null,  null],
-    roa:         [null,  null,  null],
-    dividend:    [3.0,   4.25,  4.35],
-  },
-  '0056':{ name:'元大高股息', unit:'元', isETF:true,
-    years:['2021','2022','2023'],
-    revenue:     [null,  null,  null],
-    netIncome:   [null,  null,  null],
-    grossMargin: [null,  null,  null],
-    opMargin:    [null,  null,  null],
-    eps:         [4.82,  -1.25, 3.98],
-    roe:         [null,  null,  null],
-    roa:         [null,  null,  null],
-    dividend:    [1.80,  1.00,  1.28],
-  },
-};
-
-// ══════════════════════════════════════════
-// 月營收資料庫（近24個月，億元，實際公告數字）
-// ══════════════════════════════════════════
-const MONTHLY_REV_DB = {
-  '2330':{ name:'台積電', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[1912,1600,1758,1713,1685,1496,1776,1716,2074,2237,2044,1605,
-             2152,1765,2132,2360,2290,2502,2567,2510,2897,3138,2808,2576],
-    yoy:    [-16.2,-11.4,-5.4,-2.1,-6.6,-7.0,-1.3,-6.9,17.3,25.0,23.0,22.5,
-              12.5,10.3,21.3,31.8,35.9,59.2,44.7,46.0,35.8,34.0,37.4,60.3],
-  },
-  '2317':{ name:'鴻海', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[3985,3180,4520,4230,4780,5020,4850,5230,6180,7230,6820,5058,
-             4325,3250,5012,4780,5320,5680,5450,6180,7230,8250,7680,6120],
-    yoy:    [-8.5,-12.0,-5.3,-3.8,2.1,5.8,3.2,6.8,8.5,12.3,9.8,7.2,
-              8.5,2.2,10.9,13.0,11.3,13.1,12.4,18.2,16.9,14.1,12.6,21.1],
-  },
-  '2454':{ name:'聯發科', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[302,268,358,380,415,408,432,438,452,465,448,106,
-             362,308,428,458,510,528,562,578,605,625,612,410],
-    yoy:    [-38,-35,-28,-18,-12,-8,3,8,12,18,22,15,
-              19.9,14.9,19.6,20.5,22.9,29.4,30.1,32.0,33.8,34.4,36.6,287],
-  },
-  '2382':{ name:'廣達', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[812,658,985,1050,1120,1280,1350,1420,1580,1650,1480,897,
-             985,780,1180,1260,1380,1520,1650,1780,1950,2120,1880,1280],
-    yoy:    [18,22,28,32,38,45,52,58,62,68,72,45,
-              21.3,18.5,19.8,20.0,23.2,18.8,22.2,25.4,23.4,28.5,27.0,42.7],
-  },
-  '2308':{ name:'台達電', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[268,235,318,325,342,356,362,378,395,408,385,221,
-             285,248,352,368,385,402,415,432,455,478,452,268],
-    yoy:    [-2.5,-3.8,2.1,3.5,5.8,7.2,8.5,9.8,11.2,12.5,10.8,5.2,
-              6.3,5.5,10.7,13.2,12.6,12.9,14.6,14.3,15.2,17.2,17.4,21.3],
-  },
-  '6669':{ name:'緯穎', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[245,198,312,335,368,402,425,448,512,568,525,474,
-             358,285,448,502,558,625,682,725,812,925,868,640],
-    yoy:    [28,32,38,42,48,52,58,62,68,72,75,68,
-              46.1,43.9,43.6,49.9,51.6,55.5,60.5,61.8,58.6,62.8,65.3,34.9],
-  },
-  '3017':{ name:'奇宏', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[15.2,12.8,18.5,20.3,22.8,25.6,28.5,30.2,33.8,36.5,32.8,9.0,
-             20.5,16.8,25.2,28.6,32.5,38.2,43.5,48.2,55.8,62.5,56.8,22.5],
-    yoy:    [35,38,42,48,52,58,62,68,72,78,82,65,
-              34.9,31.3,36.2,40.9,42.5,49.2,52.6,59.6,65.1,71.2,73.2,150],
-  },
-  '2303':{ name:'聯電', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[175,158,185,182,188,192,195,198,202,205,198,163,
-             180,165,195,198,205,210,218,225,232,238,228,178],
-    yoy:    [-8.5,-10.2,-5.8,-6.2,-4.5,-3.8,-2.5,-1.8,0.5,1.2,2.5,3.5,
-              2.9,4.4,5.4,8.8,9.0,9.4,11.8,13.6,14.9,16.1,15.2,9.2],
-  },
-  '2383':{ name:'台光電', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[28, 25, 32, 33, 35, 36, 37, 38, 40, 41, 39, 33,
-             36, 32, 40, 42, 45, 47, 50, 52, 55, 57, 54, 45],
-    yoy:    [5.2, 3.8, 6.5, 7.2, 8.5, 9.2, 10.5, 11.8, 13.2, 14.5, 12.8, 8.5,
-             28.6, 28.0, 25.0, 27.3, 28.6, 30.6, 35.1, 36.8, 37.5, 39.0, 38.5, 36.4],
-  },
-  '2345':{ name:'智邦', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[38, 34, 42, 44, 46, 48, 50, 52, 54, 56, 52, 46,
-             50, 45, 56, 60, 64, 68, 72, 76, 80, 84, 78, 68],
-    yoy:    [8.5, 7.2, 10.5, 12.8, 15.2, 18.5, 20.8, 22.5, 25.8, 28.5, 25.8, 20.8,
-             31.6, 32.4, 33.3, 36.4, 39.1, 41.7, 44.0, 46.2, 48.1, 50.0, 50.0, 47.8],
-  },
-  '2412':{ name:'中華電', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[195, 175, 198, 195, 200, 198, 202, 205, 198, 205, 200, 187,
-             198, 180, 205, 202, 208, 205, 210, 215, 208, 215, 210, 196],
-    yoy:    [1.5, 1.2, 1.8, 1.5, 2.0, 1.5, 2.0, 2.5, 1.8, 2.5, 2.0, 1.5,
-             1.5, 2.9, 3.5, 3.6, 4.0, 3.5, 4.0, 4.9, 5.1, 4.9, 5.0, 4.8],
-  },
-  '2886':{ name:'兆豐金', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[52, 48, 62, 58, 62, 65, 62, 65, 60, 65, 62, 59,
-             60, 55, 68, 65, 70, 72, 70, 75, 68, 74, 70, 65],
-    yoy:    [8.5, 7.2, 10.5, 9.8, 11.2, 12.5, 10.8, 12.2, 10.5, 12.2, 11.5, 9.8,
-             15.4, 14.6, 9.7, 12.1, 12.9, 10.8, 12.9, 15.4, 13.3, 13.8, 12.9, 10.2],
-  },
-  '6505':{ name:'台塑化', unit:'億元',
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[468, 398, 452, 428, 445, 432, 448, 455, 438, 458, 435, 378,
-             420, 368, 435, 415, 430, 418, 435, 445, 428, 448, 425, 370],
-    yoy:    [-12.5,-15.8,-18.2,-20.5,-18.8,-22.5,-20.8,-18.5,-22.2,-18.8,-22.5,-25.8,
-             -10.3,-7.5,-3.8,-3.0,-3.4,-3.2,-2.9,-2.2,-2.3,-2.2,-2.3,-2.1],
-  },
-  '0050':{ name:'元大台灣50', unit:'億元', isETF:true,
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[null,null,null,null,null,null,null,null,null,null,null,null,
-             null,null,null,null,null,null,null,null,null,null,null,null],
-    yoy:    [null,null,null,null,null,null,null,null,null,null,null,null,
-             null,null,null,null,null,null,null,null,null,null,null,null],
-  },
-  '0056':{ name:'元大高股息', unit:'億元', isETF:true,
-    months:['23/01','23/02','23/03','23/04','23/05','23/06','23/07','23/08','23/09','23/10','23/11','23/12',
-            '24/01','24/02','24/03','24/04','24/05','24/06','24/07','24/08','24/09','24/10','24/11','24/12'],
-    revenue:[null,null,null,null,null,null,null,null,null,null,null,null,
-             null,null,null,null,null,null,null,null,null,null,null,null],
-    yoy:    [null,null,null,null,null,null,null,null,null,null,null,null,
-             null,null,null,null,null,null,null,null,null,null,null,null],
-  },
-};
-
-// ══════════════════════════════════════════
-// 季財報資料庫（EPS + 營收，近12季）
-// ══════════════════════════════════════════
-const QUARTERLY_DB = {
-  '2330':{ name:'台積電', unit:'億元',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue: [5056, 5341, 6131, 6253, 5087, 4808, 5466, 6256, 5926, 6735, 7598, null],
-    eps:     [7.82, 9.59, 10.83,6.75, 7.98, 7.01, 8.14, 9.21, 9.56, 9.86, 12.54,null],
-    grossMargin:[55.6,59.1,60.4,61.9,56.3,54.1,54.3,53.0,53.1,55.8,57.8,null],
-    opMargin:   [45.1,49.1,50.6,52.0,45.5,42.5,42.7,41.6,42.0,45.7,47.5,null],
-    netIncome:  [1949,2459,2803,1701,2069,1819,2114,2389,2254,2470,3253,null],
-  },
-  '2317':{ name:'鴻海', unit:'億元',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue: [12605,14380,18105,17265,12515,14053,17258,18255,13587,16752,21660,null],
-    eps:     [1.58, 1.98, 2.35, 2.19, 1.72, 2.05, 2.48, 2.71, 1.95, 2.38, 2.98, null],
-    grossMargin:[5.8, 6.2, 6.4, 6.8, 6.0, 6.3, 6.5, 7.1, 6.2, 6.5, 6.8, null],
-    opMargin:   [2.6, 2.9, 3.1, 3.4, 2.8, 3.0, 3.2, 3.6, 3.0, 3.2, 3.5, null],
-    netIncome:  [223, 285, 425, 222, 244, 291, 428, 318, 268, 385, 645, null],
-  },
-  '2454':{ name:'聯發科', unit:'億元',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue: [1382, 1572, 1469,  960,  928, 1105, 1225, 1214, 1098, 1496, 1745, null],
-    eps:     [22.5, 21.8, 15.5,  6.6, 8.12,10.82,12.85,11.91,12.53,18.45,22.68,null],
-    grossMargin:[52.1,51.0,47.2,45.2,47.2,47.0,47.5,47.8,48.2,50.5,51.2,null],
-    opMargin:   [27.8,25.5,17.2,12.5,14.8,16.5,18.2,17.8,18.5,22.5,24.8,null],
-    netIncome:  [311, 343, 228,  172, 173, 230, 274, 253, 267, 393, 483, null],
-  },
-  '2382':{ name:'廣達', unit:'億元',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue: [2485, 2768, 3120, 3117, 2655, 3450, 4250, 3927, 2945, 4140, 5750, null],
-    eps:     [2.01, 2.25, 2.45, 2.25, 2.52, 3.85, 5.28, 4.17, 3.12, 5.68, 8.25, null],
-    grossMargin:[5.2, 5.5, 5.8, 5.9, 6.8, 7.2, 7.5, 7.8, 7.5, 8.2, 8.8, null],
-    opMargin:   [2.8, 3.0, 3.2, 3.4, 3.8, 4.2, 4.5, 4.8, 4.2, 4.8, 5.2, null],
-    netIncome:  [72,  81,  91,  76,  89, 136, 186, 154, 110, 200, 290, null],
-  },
-  '2308':{ name:'台達電', unit:'億元',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue: [875,  972,  1068,  973,  838, 1023, 1135, 997,  885, 1155, 1365, null],
-    eps:     [2.52, 2.85, 3.12, 2.31, 2.85, 3.25, 3.82, 3.28, 3.12, 3.85, 4.52, null],
-    grossMargin:[25.2,25.8,26.5,25.7,26.8,27.2,27.8,27.5,27.5,28.2,28.8,null],
-    opMargin:   [8.5, 8.8, 9.2, 8.5, 9.0, 9.5, 9.8, 9.5, 9.2, 9.8,10.2,null],
-    netIncome:  [65,  73,  82,  60,  74,  85, 100,  83,  82,  101, 122, null],
-  },
-  '6669':{ name:'緯穎', unit:'億元',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue: [545,  625,  752,  713,  755, 1105, 1485, 1467, 1091, 1808, 2462, null],
-    eps:     [4.52, 5.68, 7.25, 4.65, 6.85, 8.65,12.25, 7.15, 8.52,14.58,21.35,null],
-    grossMargin:[4.2, 4.5, 4.8, 4.2, 4.5, 4.8, 5.0, 5.2, 5.0, 5.5, 5.8, null],
-    opMargin:   [2.5, 2.8, 3.0, 2.5, 2.8, 3.0, 3.2, 3.5, 3.2, 3.8, 4.0, null],
-    netIncome:  [15,  18,  23,  17,  23,  32,  46,  33,  38,  67,  105, null],
-  },
-  '2303':{ name:'聯電', unit:'億元',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue: [568,  650,  698,  612,  528,  562,  578,  573,  538,  572,  602, null],
-    eps:     [1.52, 1.72, 1.85, 0.65, 0.98, 1.08, 1.12, 1.10, 1.12, 1.18, 1.25,null],
-    grossMargin:[38.2,40.5,41.2,35.5,32.5,32.8,33.2,31.5,32.5,33.8,34.5,null],
-    opMargin:   [30.2,32.5,33.8,27.5,24.8,25.2,25.8,24.5,25.2,26.5,27.8,null],
-    netIncome:  [192, 218, 235,  74,  125, 136, 142, 132, 141, 148, 157, null],
-  },
-  '2383':{ name:'台光電',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue:    [88,   102,  105,   93,   95,   106,  115,   86,  118,  142,  162,  155],
-    eps:        [4.82, 5.68, 5.92, 4.08, 4.25, 5.12, 5.88, 7.53, 7.20, 9.15,10.52, 9.85],
-    grossMargin:[22.8, 23.5, 24.2, 23.0, 23.5, 24.2, 25.5, 25.8, 26.2, 27.5, 28.8, 28.2],
-    opMargin:   [15.2, 16.5, 17.8, 15.5, 16.0, 17.2, 18.5, 17.8, 18.2, 19.8, 21.2, 20.5],
-    netIncome:  [15,   18,   19,   13,   13,   16,   18,   24,   23,   29,   33,   31],
-  },
-  '3017':{ name:'奇宏',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue:    [48,   52,   55,   43,   52,   62,   72,   82,   95,  118,  147,  142],
-    eps:        [1.72, 1.92, 2.05, 1.66, 2.35, 3.12, 3.68, 2.67, 3.85, 5.28, 6.82, 6.45],
-    grossMargin:[19.8, 20.5, 21.2, 19.5, 22.5, 23.8, 25.2, 23.8, 25.5, 27.2, 29.5, 28.8],
-    opMargin:   [12.5, 13.2, 14.5, 11.8, 14.2, 16.5, 18.2, 16.0, 17.8, 20.2, 23.5, 22.5],
-    netIncome:  [6,    7,    8,    6,    9,   12,   14,   10,   15,   20,   26,   24],
-  },
-  '2345':{ name:'智邦',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue:    [98,  108,  115,  104,  114,  126,  138,  134,  151,  168,  186,  195],
-    eps:        [2.95, 3.35, 3.65, 2.85, 3.52, 4.05, 4.62, 4.31, 5.12, 6.05, 7.28, 7.85],
-    grossMargin:[20.8, 21.5, 22.2, 21.0, 21.8, 22.5, 23.8, 23.2, 24.2, 25.5, 26.8, 27.5],
-    opMargin:   [11.5, 12.2, 13.5, 11.0, 12.2, 13.0, 14.5, 13.8, 14.8, 16.2, 17.8, 18.5],
-    netIncome:  [9,   11,   12,   10,   12,   14,   17,   16,   18,   22,   27,   28],
-  },
-  '2412':{ name:'中華電',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue:    [568,  582,  598,  564,  578,  595,  612,  573,  590,  612,  632,  604],
-    eps:        [1.18, 1.22, 1.28, 1.14, 1.20, 1.25, 1.32, 1.15, 1.25, 1.32, 1.42, 1.22],
-    grossMargin:[30.2, 30.5, 31.2, 30.8, 30.5, 31.0, 31.8, 31.2, 31.5, 32.0, 32.8, 32.2],
-    opMargin:   [16.5, 16.8, 17.5, 16.2, 16.8, 17.2, 17.8, 17.0, 17.5, 18.0, 18.8, 17.8],
-    netIncome:  [91,   94,   99,   89,   93,   97,  102,   88,   97,  102,  110,   94],
-  },
-  '2886':{ name:'兆豐金',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue:    [148,  162,  168,  160,  168,  178,  188,  178,  185,  198,  210,  198],
-    eps:        [0.42, 0.48, 0.52, 0.45, 0.48, 0.55, 0.62, 0.53, 0.55, 0.65, 0.72, 0.62],
-    grossMargin:[null, null, null, null, null, null, null, null, null, null, null, null],
-    opMargin:   [null, null, null, null, null, null, null, null, null, null, null, null],
-    netIncome:  [57,   66,   71,   62,   66,   75,   85,   72,   75,   89,   98,   85],
-  },
-  '6505':{ name:'台塑化',
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue:    [1548, 1685, 1625, 1324, 1318, 1305, 1342, 1270, 1223, 1263, 1301, 1238],
-    eps:        [2.15, 2.58, 1.85, -0.44, -0.05, 0.55, 0.98, 0.90, 0.65, 0.88, 1.05, 0.95],
-    grossMargin:[14.8, 15.2, 12.5,  6.8,  5.5,  8.2,  9.5,  8.5,  7.8,  9.2, 10.5,  9.8],
-    opMargin:   [10.5, 11.2,  8.5,  2.5,  1.8,  5.0,  6.8,  5.5,  4.8,  6.2,  7.8,  7.0],
-    netIncome:  [178,  215,  154,  -37,   -4,   46,   82,   74,   54,   73,   87,   79],
-  },
-  '0050':{ name:'元大台灣50', isETF:true,
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue:    [null,null,null,null,null,null,null,null,null,null,null,null],
-    eps:        [-2.85,-6.52, 2.15, 0.78, 3.52, 5.18, 2.85, 2.67, 5.82, 4.25, 3.68, null],
-    grossMargin:[null, null, null, null, null, null, null, null, null, null, null, null],
-    opMargin:   [null, null, null, null, null, null, null, null, null, null, null, null],
-    netIncome:  [null,null,null,null,null,null,null,null,null,null,null,null],
-  },
-  '0056':{ name:'元大高股息', isETF:true,
-    quarters:['22Q1','22Q2','22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4'],
-    revenue:    [null,null,null,null,null,null,null,null,null,null,null,null],
-    eps:        [-0.58,-1.35, 0.48, 0.20, 0.98, 1.42, 0.85, 0.73, 1.25, 0.98, 0.85, null],
-    grossMargin:[null, null, null, null, null, null, null, null, null, null, null, null],
-    opMargin:   [null, null, null, null, null, null, null, null, null, null, null, null],
-    netIncome:  [null,null,null,null,null,null,null,null,null,null,null,null],
-  },
-};
-
 const FIN_CHARTS = {};
 
-// 嘗試從 Yahoo quoteSummary 取財報（瀏覽器端 CORS 可能開放）
-async function fetchYahooFundamentals(ticker){
-  const modules = 'defaultKeyStatistics,financialData,incomeStatementHistory,earningsTrend';
-  const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=${modules}`;
-  // 先直接 fetch（瀏覽器端 CORS 有機會）
-  let lastErr;
-  for(let i=0;i<CORS_PROXIES.length;i++){
-    try{
-      const j = await fetchWithProxy(url, i);
-      const res = j?.quoteSummary?.result?.[0];
-      if(res) return res;
-    }catch(e){ lastErr=e; }
+
+// ══════════════════════════════════════════
+// FinMind Token 管理
+// ══════════════════════════════════════════
+const FM_BASE = 'https://api.finmindtrade.com/api/v4/data';
+const FM_CACHE = {};   // sessionStorage key → parsed data
+
+function getFinToken(){
+  try{ return localStorage.getItem('techboard_fintoken') || ''; }catch(_){ return ''; }
+}
+function saveFinToken(){
+  const t = document.getElementById('fin-token-input')?.value?.trim() || '';
+  if(!t){ showFinTokenStatus('請輸入 Token', 'warn'); return; }
+  try{ localStorage.setItem('techboard_fintoken', t); }catch(_){}
+  document.getElementById('fin-token-input').value = '';
+  updateFinTokenUI(t);
+  showFinTokenStatus('✅ Token 已儲存，重新查詢以載入財報', 'ok');
+}
+function clearFinToken(){
+  try{ localStorage.removeItem('techboard_fintoken'); }catch(_){}
+  updateFinTokenUI('');
+  showFinTokenStatus('Token 已清除', 'warn');
+  const sec = document.getElementById('fin-section');
+  if(sec) sec.style.display = 'none';
+}
+function updateFinTokenUI(token){
+  const s = document.getElementById('fin-token-status');
+  if(!s) return;
+  if(token){
+    s.textContent = '✅ 已設定（' + token.slice(0,6) + '…）';
+    s.style.background = 'rgba(29,184,90,.15)';
+    s.style.color = 'var(--dn)';
+    s.style.borderColor = 'var(--dn)';
+  } else {
+    s.textContent = '未設定';
+    s.style.background = 'var(--bg3)';
+    s.style.color = 'var(--tx3)';
+    s.style.borderColor = 'var(--bd2)';
   }
-  throw lastErr || new Error('quoteSummary 無法取得');
+}
+function showFinTokenStatus(msg, type){
+  const s = document.getElementById('fin-token-status');
+  if(!s) return;
+  const old = s.textContent;
+  s.textContent = msg;
+  setTimeout(() => updateFinTokenUI(getFinToken()), 2500);
 }
 
-// 從 Yahoo meta 提取可用的估值指標
-function extractMetaKPI(meta){
-  return {
-    pe:     meta.trailingPE     ?? null,
-    pb:     meta.priceToBook    ?? null,
-    mktcap: meta.marketCap      ? +(meta.marketCap/1e8).toFixed(0) : null,
-    yield:  meta.dividendYield  ? +(meta.dividendYield*100).toFixed(2) : null,
-    eps:    meta.trailingEps    ?? null,
-    hi52:   meta.fiftyTwoWeekHigh ?? null,
-    lo52:   meta.fiftyTwoWeekLow  ?? null,
-    price:  meta.regularMarketPrice ?? null,
-  };
+// ── FinMind fetch helper（帶 token + cache）──
+async function fmFetch(dataset, stockId, startDate){
+  const cKey = dataset + '_' + stockId + '_' + startDate;
+  if(FM_CACHE[cKey]) return FM_CACHE[cKey];
+  const token = getFinToken();
+  if(!token) throw new Error('NO_TOKEN');
+  const url = `${FM_BASE}?dataset=${dataset}&data_id=${encodeURIComponent(stockId)}&start_date=${startDate}&token=${encodeURIComponent(token)}`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  const j = await r.json();
+  if(j.status !== 200) throw new Error(j.msg || 'FinMind error');
+  FM_CACHE[cKey] = j.data || [];
+  return FM_CACHE[cKey];
 }
 
-// 主財報渲染
-async function renderFinancials(symbol, yahooMeta){
-  const sec=$('fin-section'); if(sec) sec.style.display='flex';
-  const sym = symbol.toUpperCase();
-  const local = FIN_DB[sym];
-  const ticker = STATE.rawData?.meta?.ticker || sym+'.TW';
-  const kpi = extractMetaKPI(yahooMeta);
+// ══════════════════════════════════════════
+// 財報主入口
+// ══════════════════════════════════════════
+async function renderFinancials(sym, yahooMeta){
+  const sec = document.getElementById('fin-section');
+  if(!sec) return;
+  const token = getFinToken();
+  if(!token){
+    sec.style.display = 'none';
+    return;
+  }
+  sec.style.display = 'flex';
 
-  setText('fin-title', `${local?.name||sym} 財務報表分析`);
+  // 標題
+  const label = document.getElementById('fin-stock-label');
+  if(label) label.textContent = sym;
 
-  // ── KPI 區 ──
-  const setKPI=(id,val,cls,sub)=>{
-    const el=$(id); if(!el) return;
-    el.textContent = val??'—';
-    if(cls) el.className='fin-kpi-val '+cls;
-    if(sub) setText(id+'-sub', sub);
-  };
+  // KPI from yahooMeta
+  renderFinKPI(yahooMeta);
 
-  // P/E
-  if(kpi.pe){
-    const peClass = kpi.pe<15?'up': kpi.pe>30?'dn':'';
-    setKPI('fk-pe', kpi.pe.toFixed(1)+'x', peClass, kpi.pe<15?'偏低評價':kpi.pe>30?'偏高評價':'合理區間');
-  }
-  // P/B
-  if(kpi.pb){
-    const pbClass = kpi.pb<1.5?'up': kpi.pb>4?'dn':'';
-    setKPI('fk-pb', kpi.pb.toFixed(2)+'x', pbClass, '');
-  }
-  // Market Cap
-  if(kpi.mktcap){
-    const mcStr = kpi.mktcap>10000 ? (kpi.mktcap/10000).toFixed(1)+'兆' : kpi.mktcap.toLocaleString()+'億';
-    setKPI('fk-mktcap', mcStr, 'cyan', '');
-  }
-  // Yield
-  if(kpi.yield){
-    setKPI('fk-yield', kpi.yield+'%', kpi.yield>=4?'up':'', kpi.yield>=4?'高殖利率':'');
-  }
-  // EPS
-  if(kpi.eps){
-    setKPI('fk-eps', kpi.eps.toFixed(2)+'元', kpi.eps>0?'up':'dn', '');
-  }
-  // 52W
-  if(kpi.hi52&&kpi.lo52&&kpi.price){
-    const pos = ((kpi.price-kpi.lo52)/(kpi.hi52-kpi.lo52)*100).toFixed(0);
-    setKPI('fk-52w', `${kpi.lo52}~${kpi.hi52}`, '', `現價位於52週${pos}%`);
-  }
-
-  // Yahoo quoteSummary CORS 通常被擋，直接用內嵌資料，避免白等
-  const yahoofin = null;
-  setText('fin-source-badge', '內嵌資料（精選）');
-
-  // 取得毛利率、ROE（從 Yahoo financialData 或 local）
-  let gmVal = null, roeVal = null;
-  if(yahoofin?.financialData){
-    const fd = yahoofin.financialData;
-    gmVal  = fd.grossMargins?.raw  ? +(fd.grossMargins.raw*100).toFixed(1) : null;
-    roeVal = fd.returnOnEquity?.raw ? +(fd.returnOnEquity.raw*100).toFixed(1) : null;
-  }
-  if(gmVal==null && local?.grossMargin)   gmVal  = local.grossMargin[local.grossMargin.length-1];
-  if(roeVal==null && local?.roe)          roeVal = local.roe[local.roe.length-1];
-  if(gmVal!=null){
-    const gmEl=$('fk-gm'); if(gmEl){ gmEl.textContent=gmVal+'%'; gmEl.className='fin-kpi-val '+(gmVal>=40?'up':gmVal<20?'dn':''); }
-    setText('fk-gm-sub', gmVal>=40?'高毛利優質':gmVal>=25?'中等水準':'毛利偏低');
-  }
-  if(roeVal!=null){
-    const roeEl=$('fk-roe'); if(roeEl){ roeEl.textContent=roeVal+'%'; roeEl.className='fin-kpi-val '+(roeVal>=15?'up':roeVal<8?'dn':''); }
-  }
-
-  // ── 決定用哪份資料畫圖 ──
-  let finData = null;
-  if(yahoofin?.incomeStatementHistory?.incomeStatementHistory?.length){
-    // 從 Yahoo 解析
-    const stmts = yahoofin.incomeStatementHistory.incomeStatementHistory;
-    finData = {
-      source: 'Yahoo Finance',
-      years:  stmts.map(s=>new Date(s.endDate.raw*1000).getFullYear().toString()).reverse(),
-      revenue:    stmts.map(s=>s.totalRevenue?.raw     ? +(s.totalRevenue.raw/1e8).toFixed(1)     : null).reverse(),
-      netIncome:  stmts.map(s=>s.netIncome?.raw         ? +(s.netIncome.raw/1e8).toFixed(1)         : null).reverse(),
-      grossMargin:stmts.map(s=>s.grossProfit?.raw&&s.totalRevenue?.raw ? +(s.grossProfit.raw/s.totalRevenue.raw*100).toFixed(1) : null).reverse(),
-      opMargin:   stmts.map(s=>s.operatingIncome?.raw&&s.totalRevenue?.raw ? +(s.operatingIncome.raw/s.totalRevenue.raw*100).toFixed(1) : null).reverse(),
-      eps:        stmts.map(s=>s.dilutedEPS?.raw ? +s.dilutedEPS.raw.toFixed(2) : null).reverse(),
-    };
-    // 補 ROE / dividend 從 local
-    if(local){ finData.roe=local.roe; finData.roa=local.roa; finData.dividend=local.dividend; }
-  } else if(local){
-    finData = { source:'內嵌精選資料', ...local };
-  }
-
-  if(!finData){ setText('fin-table-wrap','<div class="fin-loading">查無財報資料（此股票尚未收錄）</div>'); return; }
-
-  // 儲存 finData 供年報 lazy 渲染使用
-  STATE.finData = finData;
-  STATE.finDataSym = sym;
+  // 重置 tab → 季報
+  document.querySelectorAll('.fin-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'quarterly'));
+  ['quarterly','monthly','annual'].forEach(t => {
+    const p = document.getElementById('fin-panel-' + t);
+    if(p) p.style.display = t === 'quarterly' ? 'flex' : 'none';
+  });
+  STATE.finSym = sym;
   STATE.annualRendered = false;
 
-  // ── 第一批：季報（預設 tab，立即渲染）──
-  renderQuarterly(sym);
+  // loading
+  setHTML('fin-source-badge', '載入中…');
+  setHTML('fin-quarterly-table-wrap', '<div class="fin-loading"><div class="fin-spinner"></div>載入季報…</div>');
+  setHTML('fin-monthly-table-wrap',   '<div class="fin-loading"><div class="fin-spinner"></div>載入月收…</div>');
 
-  // ── 第二批：月營收（讓瀏覽器先繪製季報再繼續）──
-  setTimeout(()=>{
-    renderMonthlyRevenue(sym);
-    setTimeout(()=>Object.values(FIN_CHARTS).forEach(c=>c?.resize()), 100);
-  }, 80);
-  // 年報：等使用者點選 tab 時才 renderFinCharts / renderFinTable
-}
+  // 並行 fetch 季報 + 月收
+  const startIncome = new Date(); startIncome.setFullYear(startIncome.getFullYear() - 4);
+  const startRev    = new Date(); startRev.setFullYear(startRev.getFullYear() - 2);
+  const fmt = d => d.toISOString().slice(0, 10);
 
-// 財報 Tab 切換
-function switchFinTab(tab){
-  // 更新按鈕狀態
-  document.querySelectorAll('.fin-tab').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.tab===tab);
-  });
-  // 切換面板
-  ['quarterly','monthly','annual'].forEach(t=>{
-    const p=$('fin-panel-'+t);
-    if(p) p.style.display = t===tab ? 'flex' : 'none';
-  });
-  // 年報：lazy 渲染（只跑一次）
-  if(tab==='annual' && !STATE.annualRendered && STATE.finData){
-    renderFinCharts(STATE.finData, STATE.finDataSym);
-    renderFinTable(STATE.finData);
-    setText('fin-table-source', `資料來源：${STATE.finData.source}　最後更新：${STATE.finData.years?.slice(-1)[0]||'—'}年`);
-    STATE.annualRendered = true;
-    setTimeout(()=>{
-      ['fin-chart-rev','fin-chart-ni','fin-chart-margin','fin-chart-eps','fin-chart-div','fin-chart-roe']
-        .forEach(id=>FIN_CHARTS[id]?.resize());
-    }, 100);
+  try {
+    const [incomeRaw, monthRaw, divRaw] = await Promise.allSettled([
+      fmFetch('TaiwanStockFinancialStatements', sym, fmt(startIncome)),
+      fmFetch('TaiwanStockMonthRevenue',        sym, fmt(startRev)),
+      fmFetch('TaiwanStockDividend',            sym, fmt(startIncome)),
+    ]);
+
+    const income = incomeRaw.status === 'fulfilled' ? incomeRaw.value : [];
+    const month  = monthRaw.status  === 'fulfilled' ? monthRaw.value  : [];
+    const div    = divRaw.status    === 'fulfilled' ? divRaw.value    : [];
+
+    // 渲染季報（第一批）
+    renderQuarterly(sym, income);
+    // 月收延遲一幀
+    setTimeout(() => renderMonthlyRevenue(sym, month), 80);
+    // 儲存年報資料供 lazy
+    STATE.incomeData = income;
+    STATE.divData    = div;
+
+    const src = income.length ? `FinMind（${income[income.length-1]?.date?.slice(0,7) || '—'}）` : '查無資料';
+    setHTML('fin-source-badge', `<span style="color:var(--dn)">${src}</span>`);
+
+  } catch(e) {
+    if(e.message === 'NO_TOKEN'){
+      sec.style.display = 'none';
+    } else {
+      setHTML('fin-source-badge', `<span style="color:var(--up)">載入失敗：${e.message}</span>`);
+      setHTML('fin-quarterly-table-wrap', `<div class="fin-loading" style="color:var(--up)">❌ ${e.message}</div>`);
+    }
   }
-  // resize 當前 tab 圖表（確保尺寸正確）
-  setTimeout(()=>Object.values(FIN_CHARTS).forEach(c=>c?.resize()), 50);
 }
 
-// 財報圖表初始化
+// ── KPI ──
+function renderFinKPI(meta){
+  const set = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val ?? '—'; };
+  set('fk-pe',  meta?.pe  != null ? meta.pe.toFixed(1)  : '—');
+  set('fk-pb',  meta?.pb  != null ? meta.pb.toFixed(2)  : '—');
+  set('fk-dy',  meta?.dy  != null ? meta.dy.toFixed(2)+'%' : '—');
+  set('fk-eps', meta?.eps != null ? meta.eps.toFixed(2) : '—');
+  set('fk-gm',  meta?.gm  != null ? meta.gm.toFixed(1)+'%' : '—');
+  set('fk-roe', meta?.roe != null ? meta.roe.toFixed(1)+'%' : '—');
+  set('fk-hi',  meta?.fiftyTwoWeekHigh  != null ? meta.fiftyTwoWeekHigh.toFixed(1)  : '—');
+  set('fk-lo',  meta?.fiftyTwoWeekLow   != null ? meta.fiftyTwoWeekLow.toFixed(1)   : '—');
+}
+
+// ── Tab 切換 ──
+function switchFinTab(tab){
+  document.querySelectorAll('.fin-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  ['quarterly','monthly','annual'].forEach(t => {
+    const p = document.getElementById('fin-panel-' + t);
+    if(p) p.style.display = t === tab ? 'flex' : 'none';
+  });
+  if(tab === 'annual' && !STATE.annualRendered && STATE.incomeData){
+    renderAnnual(STATE.finSym, STATE.incomeData, STATE.divData);
+    STATE.annualRendered = true;
+  }
+  setTimeout(() => Object.values(FIN_CHARTS).forEach(c => c?.resize()), 60);
+}
+
+// ══════════════════════════════════════════
+// initFinChart（SVG renderer）
+// ══════════════════════════════════════════
 function initFinChart(id){
-  const el=$(id); if(!el) return null;
+  const el = document.getElementById(id);
+  if(!el) return null;
   if(FIN_CHARTS[id]) FIN_CHARTS[id].dispose();
-  // SVG renderer：財報靜態圖表比 canvas 更快初始化、記憶體佔用更少
-  const c=echarts.init(el,null,{renderer:'svg'});
-  FIN_CHARTS[id]=c;
+  const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const bg = theme === 'light' ? '#ffffff' : '#0d1117';
+  const c = echarts.init(el, null, { renderer:'svg', backgroundColor: bg });
+  FIN_CHARTS[id] = c;
   return c;
 }
-
-function finChartBase(title){
+function finBase(title){
+  const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const textC  = theme === 'light' ? '#4a5568' : '#8494b0';
+  const splitC = theme === 'light' ? '#eaecf0' : '#111820';
   return {
-    backgroundColor:'transparent', animation:true, animationDuration:600,
-    grid:{top:28,bottom:36,left:55,right:12},
-    tooltip:{trigger:'axis', backgroundColor:'#1c2535', borderColor:'#2c3a52',
-      textStyle:{color:'#dde4f0',fontSize:11}},
-    xAxis:{type:'category', axisLine:{lineStyle:{color:'#1a2130'}},
-      axisLabel:{color:'#4a5c7a',fontSize:10}, splitLine:{show:false}},
-    yAxis:{type:'value', position:'left', splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
-      axisLabel:{color:'#4a5c7a',fontSize:10}},
-    series:[],
+    backgroundColor: 'transparent',
+    animation: false,
+    grid: { top:32, right:16, bottom:36, left:60, containLabel:false },
+    tooltip: { trigger:'axis', confine:true, backgroundColor:'#0d1117', borderColor:'#222e42',
+      textStyle:{color:'#dde4f0', fontSize:11} },
+    xAxis: { type:'category', axisLine:{lineStyle:{color:splitC}},
+      axisLabel:{color:textC, fontSize:10, rotate:30}, splitLine:{show:false} },
+    yAxis: { type:'value', axisLine:{show:false},
+      axisLabel:{color:textC, fontSize:10}, splitLine:{lineStyle:{color:splitC, type:'dashed'}} },
   };
 }
 
-function renderFinCharts(d, sym){
-  const years = d.years||[];
-  const isETF = FIN_DB[sym]?.isETF;
-  const barColor=(arr)=>arr.map(v=>v>=0?'rgba(29,184,90,.8)':'rgba(232,69,69,.8)');
+// ══════════════════════════════════════════
+// 季報渲染
+// ══════════════════════════════════════════
+function renderQuarterly(sym, rows){
+  // 從 TaiwanStockFinancialStatements 萃取季別資料
+  // type 欄位包含：Revenue, GrossProfit, OperatingIncome, NetIncome, EPS, GrossMargin 等
+  const byQ = {};
+  for(const r of rows){
+    const q = r.date?.slice(0,7); // e.g. "2024-03"
+    if(!q) continue;
+    if(!byQ[q]) byQ[q] = { date: q };
+    byQ[q][r.type] = parseFloat(r.value) || 0;
+  }
+  const quarters = Object.keys(byQ).sort().slice(-10);
+  const qd = quarters.map(q => byQ[q]);
+  const labels = quarters.map(q => {
+    const [y, m] = q.split('-');
+    const qi = Math.ceil(parseInt(m)/3);
+    return `${parseInt(y)-1911}Q${qi}`;
+  });
 
-  // ① 營收
-  if(!isETF && d.revenue?.some(v=>v!=null)){
-    const c=initFinChart('fin-chart-rev');
-    c?.setOption({...finChartBase(),
-      xAxis:{type:'category',data:years,axisLabel:{color:'#4a5c7a',fontSize:10},axisLine:{lineStyle:{color:'#1a2130'}},splitLine:{show:false}},
-      series:[{type:'bar',data:d.revenue,
-        itemStyle:{color:'#22d3ee',borderRadius:[3,3,0,0]},
-        label:{show:true,position:'top',color:'#8494b0',fontSize:9,
-          formatter:p=>p.value!=null?p.value.toLocaleString():''}}]
-    });
+  // 季營收
+  const cRev = initFinChart('fin-chart-qrev');
+  if(cRev){
+    const revData = qd.map(d => d.Revenue != null ? +(d.Revenue/1e6).toFixed(0) : null);
+    cRev.setOption({...finBase(), xAxis:{...finBase().xAxis,data:labels},
+      series:[{type:'bar',data:revData,
+        itemStyle:{color:(_,i)=> revData[i]>0?'#4a90e2':'#e84545'},
+        label:{show:true,position:'top',fontSize:9,color:'#8494b0',
+          formatter:v=>v.value!=null?v.value+'M':''}}]}, true);
   }
 
-  // ② 淨利
-  if(!isETF && d.netIncome?.some(v=>v!=null)){
-    const c=initFinChart('fin-chart-ni');
-    const niColors=d.netIncome.map(v=>v==null?'#2c3a52':v>=0?'rgba(29,184,90,.8)':'rgba(232,69,69,.8)');
-    c?.setOption({...finChartBase(),
-      xAxis:{type:'category',data:years,axisLabel:{color:'#4a5c7a',fontSize:10},axisLine:{lineStyle:{color:'#1a2130'}},splitLine:{show:false}},
-      series:[{type:'bar',data:d.netIncome,
-        itemStyle:{color:p=>niColors[p.dataIndex]||'#2c3a52',borderRadius:[3,3,0,0]},
-        label:{show:true,position:'top',color:'#8494b0',fontSize:9,
-          formatter:p=>p.value!=null?p.value.toLocaleString():''}}]
-    });
+  // 季EPS
+  const cEps = initFinChart('fin-chart-qeps');
+  if(cEps){
+    const eps = qd.map(d => d.EPS != null ? +d.EPS.toFixed(2) : null);
+    cEps.setOption({...finBase(), xAxis:{...finBase().xAxis,data:labels},
+      series:[{type:'bar',data:eps,
+        itemStyle:{color:(_,i)=> eps[i]>=0?'#1db85a':'#e84545'},
+        label:{show:true,position:'top',fontSize:9,color:'#8494b0',
+          formatter:v=>v.value!=null?v.value:''}}]}, true);
   }
 
-  // ③ 毛利率 / 營益率
-  if(!isETF && (d.grossMargin||d.opMargin)?.some(v=>v!=null)){
-    const c=initFinChart('fin-chart-margin');
-    c?.setOption({...finChartBase(),
-      legend:{top:2,right:10,textStyle:{color:'#8494b0',fontSize:9}},
-      xAxis:{type:'category',data:years,axisLabel:{color:'#4a5c7a',fontSize:10},axisLine:{lineStyle:{color:'#1a2130'}},splitLine:{show:false}},
-      yAxis:{type:'value',axisLabel:{color:'#4a5c7a',fontSize:10,formatter:v=>v+'%'},splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}}},
+  // 毛利率 + 營益率
+  const cM = initFinChart('fin-chart-qmargin');
+  if(cM){
+    const gm = qd.map(d => d.GrossMargin != null ? +d.GrossMargin.toFixed(1) : null);
+    const om = qd.map(d => d.OperatingMargin != null ? +d.OperatingMargin.toFixed(1) : null);
+    cM.setOption({...finBase(), legend:{top:4,right:8,textStyle:{color:'#8494b0',fontSize:10}},
+      xAxis:{...finBase().xAxis,data:labels},
       series:[
-        {name:'毛利率',type:'line',data:d.grossMargin,symbol:'circle',symbolSize:5,
-          lineStyle:{color:'#22d3ee',width:2},itemStyle:{color:'#22d3ee'}},
-        {name:'營益率',type:'line',data:d.opMargin,symbol:'circle',symbolSize:5,
-          lineStyle:{color:'#f59e0b',width:2},itemStyle:{color:'#f59e0b'}},
-      ]
-    });
+        {name:'毛利率',type:'line',data:gm,smooth:true,
+          lineStyle:{color:'#22d3ee',width:2},itemStyle:{color:'#22d3ee'},
+          symbol:'circle',symbolSize:5},
+        {name:'營益率',type:'line',data:om,smooth:true,
+          lineStyle:{color:'#f59e0b',width:2},itemStyle:{color:'#f59e0b'},
+          symbol:'circle',symbolSize:5},
+      ]}, true);
   }
 
-  // ④ EPS
-  if(d.eps?.some(v=>v!=null)){
-    const c=initFinChart('fin-chart-eps');
-    const colors=d.eps.map(v=>v==null?'#2c3a52':v>=0?'rgba(29,184,90,.85)':'rgba(232,69,69,.85)');
-    c?.setOption({...finChartBase(),
-      xAxis:{type:'category',data:years,axisLabel:{color:'#4a5c7a',fontSize:10},axisLine:{lineStyle:{color:'#1a2130'}},splitLine:{show:false}},
-      series:[{type:'bar',data:d.eps,
-        itemStyle:{color:p=>colors[p.dataIndex]||'#2c3a52',borderRadius:[3,3,0,0]},
-        label:{show:true,position:'top',color:'#8494b0',fontSize:9,
-          formatter:p=>p.value!=null?p.value:''}},
-        {type:'line',data:d.eps,symbol:'none',
-          lineStyle:{color:'rgba(255,255,255,.2)',width:1,type:'dashed'}}
-      ]
-    });
+  // 季淨利
+  const cNI = initFinChart('fin-chart-qni');
+  if(cNI){
+    const ni = qd.map(d => d.NetIncome != null ? +(d.NetIncome/1e6).toFixed(0) : null);
+    cNI.setOption({...finBase(), xAxis:{...finBase().xAxis,data:labels},
+      series:[{type:'bar',data:ni,
+        itemStyle:{color:(_,i)=> ni[i]>=0?'#1db85a':'#e84545'}}]}, true);
   }
 
-  // ⑤ 股利
-  if(d.dividend?.some(v=>v!=null)){
-    const c=initFinChart('fin-chart-div');
-    c?.setOption({...finChartBase(),
-      xAxis:{type:'category',data:years,axisLabel:{color:'#4a5c7a',fontSize:10},axisLine:{lineStyle:{color:'#1a2130'}},splitLine:{show:false}},
-      series:[{type:'bar',data:d.dividend,
-        itemStyle:{color:'rgba(245,158,11,.85)',borderRadius:[3,3,0,0]},
-        label:{show:true,position:'top',color:'#f59e0b',fontSize:9,
-          formatter:p=>p.value!=null?p.value+'元':''}}]
-    });
-  }
+  // 季報摘要表
+  const cols = quarters.slice(-8);
+  const colD = cols.map(q => byQ[q]);
+  const colL = cols.map(q => { const [y,m]=q.split('-'); return `${parseInt(y)-1911}Q${Math.ceil(parseInt(m)/3)}`; });
+  const pct = v => v != null ? `<span class="${v>=0?'up':'dn'}">${v.toFixed(1)}%</span>` : '—';
+  const mon = v => v != null ? (v/1e6).toFixed(0)+'M' : '—';
+  const num = (v, d=2) => v != null ? (+v).toFixed(d) : '—';
 
-  // ⑥ ROE / ROA
-  if(!isETF && (d.roe||d.roa)?.some(v=>v!=null)){
-    const c=initFinChart('fin-chart-roe');
-    c?.setOption({...finChartBase(),
-      legend:{top:2,right:10,textStyle:{color:'#8494b0',fontSize:9}},
-      xAxis:{type:'category',data:years,axisLabel:{color:'#4a5c7a',fontSize:10},axisLine:{lineStyle:{color:'#1a2130'}},splitLine:{show:false}},
-      yAxis:{type:'value',axisLabel:{color:'#4a5c7a',fontSize:10,formatter:v=>v+'%'},splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}}},
-      series:[
-        {name:'ROE',type:'bar',data:d.roe,
-          itemStyle:{color:'rgba(155,114,245,.8)',borderRadius:[3,3,0,0]}},
-        {name:'ROA',type:'bar',data:d.roa,
-          itemStyle:{color:'rgba(74,144,226,.6)',borderRadius:[3,3,0,0]}},
-      ]
-    });
-  }
-
-  // ETF 隱藏非相關圖表
-  if(isETF){
-    ['fin-chart-rev','fin-chart-ni','fin-chart-margin','fin-chart-roe'].forEach(id=>{
-      const el=$(id); if(el) el.closest('.fin-chart-card').style.display='none';
-    });
-  }
-
-  // 未收錄股票 → 顯示提示
-  if(!local && !yahoofin){
-    ['fin-chart-rev','fin-chart-ni','fin-chart-margin','fin-chart-eps','fin-chart-div','fin-chart-roe'].forEach(id=>{
-      const el=$(id);
-      if(el) el.innerHTML='<div class="fin-loading" style="color:var(--tx4);flex-direction:column;gap:4px"><div style="font-size:20px">📋</div><div>此股票尚未收錄詳細財報</div><div style="font-size:10px">KPI 指標由 Yahoo Finance 即時提供</div></div>';
-    });
-  }
-
-  setTimeout(()=>Object.values(FIN_CHARTS).forEach(c=>c?.resize()), 100);
+  let html = `<table class="fin-table"><thead><tr>
+    <th>項目</th>${colL.map(l=>`<th>${l}</th>`).join('')}
+  </tr></thead><tbody>
+    <tr><td>營收(M)</td>${colD.map(d=>mon(d.Revenue)).map(v=>`<td>${v}</td>`).join('')}</tr>
+    <tr><td>毛利率</td>${colD.map(d=>pct(d.GrossMargin)).map(v=>`<td>${v}</td>`).join('')}</tr>
+    <tr><td>營益率</td>${colD.map(d=>pct(d.OperatingMargin)).map(v=>`<td>${v}</td>`).join('')}</tr>
+    <tr><td>淨利(M)</td>${colD.map(d=>mon(d.NetIncome)).map(v=>`<td>${v}</td>`).join('')}</tr>
+    <tr><td>EPS(元)</td>${colD.map(d=>num(d.EPS)).map(v=>`<td>${v}</td>`).join('')}</tr>
+  </tbody></table>`;
+  setHTML('fin-quarterly-table-wrap', html);
 }
 
-// 財報摘要表
-function renderFinTable(d){
-  const isETF = !d.revenue?.some(v=>v!=null);
-  const fmt=(v,dec=1)=>v==null?'—':typeof v==='number'?v.toLocaleString(undefined,{minimumFractionDigits:dec,maximumFractionDigits:dec}):v;
-  const pctChg=(arr,i)=>{
-    if(!arr||arr[i]==null||arr[i-1]==null||arr[i-1]===0) return '';
-    const c=((arr[i]-arr[i-1])/Math.abs(arr[i-1])*100).toFixed(1);
-    return `<span class="${c>=0?'up':'dn'}">${c>=0?'▲':'▼'}${Math.abs(c)}%</span>`;
-  };
-  const years=d.years||[];
-  let html=`<table class="fin-table"><thead><tr>
-    <th>項目</th>${years.map(y=>`<th>${y}</th>`).join('')}
+// ══════════════════════════════════════════
+// 月營收渲染
+// ══════════════════════════════════════════
+function renderMonthlyRevenue(sym, rows){
+  // rows: [{date:'2024-01-01', revenue:...}, ...]
+  const sorted = [...rows].sort((a,b) => a.date.localeCompare(b.date)).slice(-24);
+  if(!sorted.length){
+    setHTML('fin-monthly-table-wrap','<div class="fin-loading" style="color:var(--tx4)">無月營收資料</div>');
+    return;
+  }
+  const labels  = sorted.map(r => r.date.slice(2,7).replace('-','/'));
+  const revs    = sorted.map(r => r.revenue != null ? +(r.revenue/1e6).toFixed(1) : null);
+  const yoyArr  = sorted.map(r => r.revenue_month_increase_ratio != null
+    ? +r.revenue_month_increase_ratio.toFixed(1) : null);
+
+  const cM = initFinChart('fin-chart-monthly');
+  if(cM){
+    cM.setOption({
+      ...finBase(),
+      legend:{top:4,right:8,textStyle:{color:'#8494b0',fontSize:10}},
+      xAxis:{...finBase().xAxis, data:labels},
+      yAxis:[
+        {type:'value', axisLabel:{color:'#8494b0',fontSize:10},
+          splitLine:{lineStyle:{color:'#111820',type:'dashed'}}},
+        {type:'value', axisLabel:{color:'#f59e0b',fontSize:10,formatter:v=>v+'%'},
+          splitLine:{show:false}},
+      ],
+      series:[
+        {name:'月營收(M)',type:'bar',data:revs,yAxisIndex:0,
+          itemStyle:{color:'#22d3ee', opacity:.8}},
+        {name:'YoY%',type:'line',data:yoyArr,yAxisIndex:1,smooth:true,
+          lineStyle:{color:'#f59e0b',width:2,type:'dashed'},
+          itemStyle:{color:'#f59e0b'},symbol:'circle',symbolSize:4},
+      ]
+    }, true);
+  }
+
+  // 月收摘要表
+  const recent = sorted.slice(-12).reverse();
+  let thtml = `<table class="fin-table"><thead><tr>
+    <th>月份</th><th>營收(M)</th><th>月增率</th><th>年增率</th>
   </tr></thead><tbody>`;
-
-  const rows=[];
-  if(!isETF&&d.revenue?.some(v=>v!=null)) rows.push(['營收（億）',d.revenue]);
-  if(!isETF&&d.netIncome?.some(v=>v!=null)) rows.push(['淨利（億）',d.netIncome]);
-  if(!isETF&&d.grossMargin?.some(v=>v!=null)) rows.push(['毛利率（%）',d.grossMargin,1,'%']);
-  if(!isETF&&d.opMargin?.some(v=>v!=null)) rows.push(['營益率（%）',d.opMargin,1,'%']);
-  if(d.eps?.some(v=>v!=null)) rows.push(['EPS（元）',d.eps,2]);
-  if(!isETF&&d.roe?.some(v=>v!=null)) rows.push(['ROE（%）',d.roe,1,'%']);
-  if(!isETF&&d.roa?.some(v=>v!=null)) rows.push(['ROA（%）',d.roa,1,'%']);
-  if(d.dividend?.some(v=>v!=null)) rows.push(['現金股利（元）',d.dividend,2]);
-
-  rows.forEach(([label,arr,dec=1,suffix=''])=>{
-    html+=`<tr><td>${label}</td>`;
-    arr.forEach((v,i)=>{
-      const str=v==null?'—':fmt(v,dec)+(suffix&&v!=null?suffix:'');
-      const chg=i>0?pctChg(arr,i):'';
-      html+=`<td>${str} ${chg}</td>`;
-    });
-    html+='</tr>';
-  });
-
-  html+='</tbody></table>';
-  setHTML('fin-table-wrap', html);
+  for(const r of recent){
+    const m   = r.date.slice(0,7).replace('-','/');
+    const rev = r.revenue != null ? (r.revenue/1e6).toFixed(1)+'M' : '—';
+    const mom = r.revenue_month_increase_ratio != null
+      ? `<span class="${r.revenue_month_increase_ratio>=0?'up':'dn'}">${r.revenue_month_increase_ratio.toFixed(1)}%</span>` : '—';
+    const yoy = r.revenue_year_increase_ratio != null
+      ? `<span class="${r.revenue_year_increase_ratio>=0?'up':'dn'}">${r.revenue_year_increase_ratio.toFixed(1)}%</span>` : '—';
+    thtml += `<tr><td>${m}</td><td>${rev}</td><td>${mom}</td><td>${yoy}</td></tr>`;
+  }
+  thtml += '</tbody></table>';
+  setHTML('fin-monthly-table-wrap', thtml);
 }
 
 // ══════════════════════════════════════════
-// 月營收圖表渲染
+// 年報渲染（lazy，點 tab 才跑）
 // ══════════════════════════════════════════
-function renderMonthlyRevenue(sym){
-  const d = MONTHLY_REV_DB[sym];
-  const tableCard = $('fin-monthly-table-card');
-  const mqGrid   = $('fin-mq-grid');
-
-  if(!d){
-    if(tableCard) tableCard.style.display='none';
-    // 月營收圖也隱藏
-    const mChart = $('fin-chart-monthly');
-    if(mChart) mChart.closest('.fin-chart-card').style.display='none';
-    return;
+function renderAnnual(sym, rows, divRows){
+  // 彙整年度資料
+  const byY = {};
+  for(const r of rows){
+    const y = r.date?.slice(0,4);
+    if(!y) continue;
+    if(!byY[y]) byY[y] = { year: y };
+    byY[y][r.type] = parseFloat(r.value) || 0;
   }
-  if(mqGrid) mqGrid.style.display='grid';
-  if(tableCard) tableCard.style.display='block';
+  const years = Object.keys(byY).sort().slice(-6);
+  const yd = years.map(y => byY[y]);
+  const labels = years.map(y => parseInt(y)-1911+'年');
 
-  const months = d.months;
-  const rev    = d.revenue;
-  const yoy    = d.yoy;
-
-  // 顏色：YoY 正值綠，負值紅
-  const yoyColors = yoy.map(v=> v==null?'#4a5c7a': v>=0?'rgba(29,184,90,.8)':'rgba(232,69,69,.8)');
-  const barColors = rev.map((v,i)=>{
-    // 2024年用青色，2023年用藍色
-    return i>=12 ? 'rgba(34,211,238,.85)' : 'rgba(74,144,226,.75)';
-  });
-
-  const c = initFinChart('fin-chart-monthly');
-  c?.setOption({
-    backgroundColor:'transparent', animation:true, animationDuration:500,
-    grid:[
-      {top:30, bottom:60, left:58, right:12, height:'55%'},
-      {top:'65%', bottom:36, left:58, right:12},
-    ],
-    legend:{top:4, right:10,
-      textStyle:{color:'#8494b0',fontSize:9},
-      data:['2023年月營收','2024年月營收','YoY%']},
-    xAxis:[
-      {type:'category', data:months, gridIndex:0,
-        axisLine:{lineStyle:{color:'#1a2130'}},
-        axisLabel:{show:false}, splitLine:{show:false}},
-      {type:'category', data:months, gridIndex:1,
-        axisLine:{lineStyle:{color:'#1a2130'}},
-        axisLabel:{color:'#4a5c7a',fontSize:9,
-          interval:0, rotate:35,
-          formatter:v=>v},
-        splitLine:{show:false}},
-    ],
-    yAxis:[
-      {type:'value', gridIndex:0, position:'left',
-        axisLabel:{color:'#4a5c7a',fontSize:9,formatter:v=>v>=1000?(v/1000).toFixed(1)+'K':v},
-        splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
-        name:'億元', nameTextStyle:{color:'#4a5c7a',fontSize:9}},
-      {type:'value', gridIndex:1, position:'left',
-        axisLabel:{color:'#4a5c7a',fontSize:9,formatter:v=>v+'%'},
-        splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
-        name:'YoY%', nameTextStyle:{color:'#4a5c7a',fontSize:9}},
-    ],
-    tooltip:{trigger:'axis', backgroundColor:'#1c2535', borderColor:'#2c3a52',
-      textStyle:{color:'#dde4f0',fontSize:11},
-      formatter:params=>{
-        const i=params[0]?.dataIndex;
-        const m=months[i]||'—';
-        const r=rev[i]!=null?rev[i].toLocaleString()+'億':'—';
-        const y=yoy[i]!=null?(yoy[i]>=0?'▲':'▼')+Math.abs(yoy[i]).toFixed(1)+'%':'—';
-        const yColor=yoy[i]>=0?'#1db85a':'#e84545';
-        return `<b>${m}</b><br>月營收 ${r}<br>YoY <span style="color:${yColor}">${y}</span>`;
-      }},
-    series:[
-      {name:'2023年月營收', type:'bar', xAxisIndex:0, yAxisIndex:0,
-        data:rev.slice(0,12).concat(new Array(12).fill(null)),
-        itemStyle:{color:'rgba(74,144,226,.75)',borderRadius:[2,2,0,0]},
-        barMaxWidth:18},
-      {name:'2024年月營收', type:'bar', xAxisIndex:0, yAxisIndex:0,
-        data:new Array(12).fill(null).concat(rev.slice(12)),
-        itemStyle:{color:'rgba(34,211,238,.85)',borderRadius:[2,2,0,0]},
-        barMaxWidth:18},
-      {name:'YoY%', type:'bar', xAxisIndex:1, yAxisIndex:1,
-        data:yoy.map((v,i)=>({value:v,itemStyle:{color:yoyColors[i],borderRadius:[2,2,0,0]}})),
-        barMaxWidth:18},
-    ],
-  },true);
-
-  // YoY 摘要
-  const validYoy = yoy.filter(v=>v!=null);
-  const avgYoy = validYoy.length ? (validYoy.reduce((a,b)=>a+b,0)/validYoy.length).toFixed(1) : '—';
-  const lastYoy = yoy.filter(v=>v!=null).slice(-1)[0];
-  const yoyClass = lastYoy>=0?'color:#1db85a':'color:#e84545';
-  setText('fin-monthly-yoy-summary', `平均YoY ${avgYoy}% | 最新 ${lastYoy>=0?'▲':'▼'}${Math.abs(lastYoy).toFixed(1)}%`);
-
-  // 月營收明細表
-  const headers = ['月份','月營收(億)','YoY%'];
-  let mHtml = `<table class="fin-table"><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`;
-  for(let i=months.length-1;i>=0;i--){
-    const y=yoy[i];
-    const yStr=y!=null?`<span class="${y>=0?'up':'dn'}">${y>=0?'▲':'▼'}${Math.abs(y).toFixed(1)}%</span>`:'—';
-    mHtml+=`<tr><td>${months[i]}</td><td>${rev[i]!=null?rev[i].toLocaleString():''}</td><td>${yStr}</td></tr>`;
-  }
-  mHtml+='</tbody></table>';
-  setHTML('fin-monthly-table-wrap', mHtml);
-}
-
-// ══════════════════════════════════════════
-// 季財報圖表渲染
-// ══════════════════════════════════════════
-function renderQuarterly(sym){
-  const d = QUARTERLY_DB[sym];
-  const tableCard = $('fin-quarterly-table-card');
-
-  if(!d){
-    if(tableCard) tableCard.style.display='none';
-    // 季圖也隱藏
-    ['fin-chart-qrev','fin-chart-qeps','fin-chart-qmargin','fin-chart-qni'].forEach(id=>{
-      const el=$(id); if(el) el.closest('.fin-chart-card').style.display='none';
-    });
-    return;
-  }
-  if(tableCard) tableCard.style.display='block';
-
-  const qs      = d.quarters;
-  const rev     = d.revenue;
-  const eps     = d.eps;
-  const gm      = d.grossMargin;
-  const om      = d.opMargin;
-  const ni      = d.netIncome;
-
-  // 標記 null（尚未公告）
-  const validLabel = qs.map((q,i)=> rev[i]==null ? q+'*':q);
-
-  // ── 季營收 ──
-  {
-    const c=initFinChart('fin-chart-qrev');
-    const colors=rev.map((v,i)=>{
-      if(v==null) return 'rgba(44,58,82,.5)';
-      if(i>0&&rev[i-1]!=null) return v>rev[i-1]?'rgba(34,211,238,.85)':'rgba(74,144,226,.65)';
-      return 'rgba(74,144,226,.75)';
-    });
-    c?.setOption({
-      backgroundColor:'transparent',animation:true,animationDuration:500,
-      grid:{top:24,bottom:40,left:55,right:12},
-      xAxis:{type:'category',data:validLabel,
-        axisLine:{lineStyle:{color:'#1a2130'}},
-        axisLabel:{color:'#4a5c7a',fontSize:9,rotate:30,interval:0},splitLine:{show:false}},
-      yAxis:{type:'value',
-        axisLabel:{color:'#4a5c7a',fontSize:9,formatter:v=>v>=1000?(v/1000).toFixed(1)+'K':v},
-        splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}}},
-      tooltip:{trigger:'axis',backgroundColor:'#1c2535',borderColor:'#2c3a52',
-        textStyle:{color:'#dde4f0',fontSize:11},
-        formatter:p=>`<b>${p[0]?.name}</b><br>季營收 ${p[0]?.value!=null?p[0].value.toLocaleString()+'億':'未公告'}`},
-      series:[{type:'bar',data:rev.map((v,i)=>({value:v,itemStyle:{color:colors[i],borderRadius:[3,3,0,0]}})),
-        barMaxWidth:24,
-        label:{show:true,position:'top',color:'#8494b0',fontSize:9,
-          formatter:p=>p.value!=null?p.value.toLocaleString():''}}],
-    },true);
+  // 年度營收
+  const cR = initFinChart('fin-chart-rev');
+  if(cR){
+    const rev = yd.map(d => d.Revenue != null ? +(d.Revenue/1e6).toFixed(0) : null);
+    cR.setOption({...finBase(), xAxis:{...finBase().xAxis,data:labels},
+      series:[{type:'bar',data:rev,
+        itemStyle:{color:(_,i)=> i===rev.length-1?'#22d3ee':'#4a90e2'},
+        label:{show:true,position:'top',fontSize:9,color:'#8494b0',
+          formatter:v=>v.value!=null?v.value+'M':''}}]}, true);
   }
 
-  // ── 季EPS ──
-  {
-    const c=initFinChart('fin-chart-qeps');
-    const epsColors=eps.map(v=>v==null?'rgba(44,58,82,.5)':v>=0?'rgba(29,184,90,.85)':'rgba(232,69,69,.85)');
-    c?.setOption({
-      backgroundColor:'transparent',animation:true,animationDuration:500,
-      grid:{top:24,bottom:40,left:50,right:12},
-      xAxis:{type:'category',data:validLabel,
-        axisLine:{lineStyle:{color:'#1a2130'}},
-        axisLabel:{color:'#4a5c7a',fontSize:9,rotate:30,interval:0},splitLine:{show:false}},
-      yAxis:{type:'value',
-        axisLabel:{color:'#4a5c7a',fontSize:9},
-        splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}}},
-      tooltip:{trigger:'axis',backgroundColor:'#1c2535',borderColor:'#2c3a52',
-        textStyle:{color:'#dde4f0',fontSize:11},
-        formatter:p=>`<b>${p[0]?.name}</b><br>EPS ${p[0]?.value!=null?p[0].value+'元':'未公告'}`},
+  // 年度EPS
+  const cE = initFinChart('fin-chart-eps');
+  if(cE){
+    const eps = yd.map(d => d.EPS != null ? +d.EPS.toFixed(2) : null);
+    cE.setOption({...finBase(), xAxis:{...finBase().xAxis,data:labels},
+      series:[{type:'bar',data:eps,
+        itemStyle:{color:(_,i)=> eps[i]>=0?(i===eps.length-1?'#22d3ee':'#1db85a'):'#e84545'},
+        label:{show:true,position:'top',fontSize:9,color:'#8494b0',
+          formatter:v=>v.value!=null?v.value:''}}]}, true);
+  }
+
+  // 毛利率趨勢
+  const cM = initFinChart('fin-chart-margin');
+  if(cM){
+    const gm = yd.map(d => d.GrossMargin != null ? +d.GrossMargin.toFixed(1) : null);
+    const om = yd.map(d => d.OperatingMargin != null ? +d.OperatingMargin.toFixed(1) : null);
+    cM.setOption({...finBase(), legend:{top:4,right:8,textStyle:{color:'#8494b0',fontSize:10}},
+      xAxis:{...finBase().xAxis,data:labels},
       series:[
-        {type:'bar',data:eps.map((v,i)=>({value:v,itemStyle:{color:epsColors[i],borderRadius:[3,3,0,0]}})),
-          barMaxWidth:24,
-          label:{show:true,position:'top',color:'#8494b0',fontSize:9,
-            formatter:p=>p.value!=null?p.value:''}},
-        {type:'line',data:eps,symbol:'circle',symbolSize:4,
-          lineStyle:{color:'rgba(255,255,255,.3)',width:1,type:'dashed'},
-          itemStyle:{color:'rgba(255,255,255,.5)'}},
-      ],
-    },true);
+        {name:'毛利率',type:'line',data:gm,smooth:true,
+          lineStyle:{color:'#22d3ee',width:2},itemStyle:{color:'#22d3ee'},
+          symbol:'circle',symbolSize:6},
+        {name:'營益率',type:'line',data:om,smooth:true,
+          lineStyle:{color:'#f59e0b',width:2},itemStyle:{color:'#f59e0b'},
+          symbol:'circle',symbolSize:6},
+      ]}, true);
   }
 
-  // ── 季毛利率 / 營益率 ──
-  {
-    const c=initFinChart('fin-chart-qmargin');
-    c?.setOption({
-      backgroundColor:'transparent',animation:true,animationDuration:500,
-      grid:{top:30,bottom:40,left:48,right:12},
-      legend:{top:4,right:10,textStyle:{color:'#8494b0',fontSize:9}},
-      xAxis:{type:'category',data:validLabel,
-        axisLine:{lineStyle:{color:'#1a2130'}},
-        axisLabel:{color:'#4a5c7a',fontSize:9,rotate:30,interval:0},splitLine:{show:false}},
-      yAxis:{type:'value',
-        axisLabel:{color:'#4a5c7a',fontSize:9,formatter:v=>v+'%'},
-        splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}}},
-      tooltip:{trigger:'axis',backgroundColor:'#1c2535',borderColor:'#2c3a52',
-        textStyle:{color:'#dde4f0',fontSize:11},
-        formatter:params=>{
-          const i=params[0]?.dataIndex;
-          return `<b>${validLabel[i]}</b><br>毛利率 ${gm[i]!=null?gm[i]+'%':'—'}<br>營益率 ${om[i]!=null?om[i]+'%':'—'}`;
-        }},
-      series:[
-        {name:'毛利率',type:'line',data:gm,symbol:'circle',symbolSize:5,
-          lineStyle:{color:'#22d3ee',width:2},itemStyle:{color:'#22d3ee'}},
-        {name:'營益率',type:'line',data:om,symbol:'circle',symbolSize:5,
-          lineStyle:{color:'#f59e0b',width:2},itemStyle:{color:'#f59e0b'}},
-      ],
-    },true);
+  // 股利
+  const divByY = {};
+  for(const d of (divRows||[])){
+    const y = d.date?.slice(0,4);
+    if(!y) continue;
+    if(!divByY[y]) divByY[y] = 0;
+    if(d.CashExDividendTradingDate) divByY[y] += parseFloat(d.CashDividend)||0;
+  }
+  const cD = initFinChart('fin-chart-div');
+  if(cD){
+    const divArr = years.map(y => divByY[y] != null ? +divByY[y].toFixed(2) : null);
+    cD.setOption({...finBase(), xAxis:{...finBase().xAxis,data:labels},
+      series:[{type:'bar',data:divArr,
+        itemStyle:{color:'#9b72f5'},
+        label:{show:true,position:'top',fontSize:9,color:'#8494b0',
+          formatter:v=>v.value!=null?v.value+'元':''}}]}, true);
   }
 
-  // ── 季淨利 ──
-  {
-    const c=initFinChart('fin-chart-qni');
-    const niColors=ni.map(v=>v==null?'rgba(44,58,82,.5)':v>=0?'rgba(155,114,245,.85)':'rgba(232,69,69,.85)');
-    c?.setOption({
-      backgroundColor:'transparent',animation:true,animationDuration:500,
-      grid:{top:24,bottom:40,left:55,right:12},
-      xAxis:{type:'category',data:validLabel,
-        axisLine:{lineStyle:{color:'#1a2130'}},
-        axisLabel:{color:'#4a5c7a',fontSize:9,rotate:30,interval:0},splitLine:{show:false}},
-      yAxis:{type:'value',
-        axisLabel:{color:'#4a5c7a',fontSize:9,formatter:v=>v>=1000?(v/1000).toFixed(1)+'K':v},
-        splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}}},
-      tooltip:{trigger:'axis',backgroundColor:'#1c2535',borderColor:'#2c3a52',
-        textStyle:{color:'#dde4f0',fontSize:11},
-        formatter:p=>`<b>${p[0]?.name}</b><br>季淨利 ${p[0]?.value!=null?p[0].value.toLocaleString()+'億':'未公告'}`},
-      series:[{type:'bar',data:ni.map((v,i)=>({value:v,itemStyle:{color:niColors[i],borderRadius:[3,3,0,0]}})),
-        barMaxWidth:24,
-        label:{show:true,position:'top',color:'#8494b0',fontSize:9,
-          formatter:p=>p.value!=null?p.value.toLocaleString():''}}],
-    },true);
-  }
-
-  // ── 季財報摘要表 ──
-  {
-    const fmt=(v,dec=2)=>v==null?'<span style="color:#2e3d55">—</span>':Number(v).toFixed(dec);
-    const qoq=(arr,i)=>{
-      if(!arr||arr[i]==null||arr[i-1]==null||arr[i-1]===0) return '';
-      const c=((arr[i]-arr[i-1])/Math.abs(arr[i-1])*100).toFixed(1);
-      return ` <span class="${c>=0?'up':'dn'}" style="font-size:9px">${c>=0?'▲':'▼'}${Math.abs(c)}%</span>`;
-    };
-    let qHtml=`<table class="fin-table" style="min-width:600px"><thead><tr>
-      <th>季度</th><th>季營收(億)</th><th>季淨利(億)</th><th>EPS(元)</th><th>毛利率</th><th>營益率</th>
-    </tr></thead><tbody>`;
-    for(let i=qs.length-1;i>=0;i--){
-      const announced=rev[i]!=null;
-      qHtml+=`<tr${!announced?' style="opacity:.45"':''}>
-        <td>${qs[i]}${!announced?' <span style="font-size:9px;color:#4a5c7a">未公告</span>':''}</td>
-        <td>${fmt(rev[i],0)}${qoq(rev,i)}</td>
-        <td>${fmt(ni[i],0)}${qoq(ni,i)}</td>
-        <td class="${eps[i]>0?'up':'dn'}">${fmt(eps[i])}${qoq(eps,i)}</td>
-        <td>${gm[i]!=null?gm[i]+'%':'—'}</td>
-        <td>${om[i]!=null?om[i]+'%':'—'}</td>
-      </tr>`;
-    }
-    qHtml+='</tbody></table>';
-    setHTML('fin-quarterly-table-wrap', qHtml);
-  }
+  setTimeout(() => ['fin-chart-rev','fin-chart-eps','fin-chart-margin','fin-chart-div']
+    .forEach(id => FIN_CHARTS[id]?.resize()), 100);
 }
 
 // Window resize
@@ -2259,15 +1700,6 @@ async function queryStock(){
   const sym=$('stock-input').value.trim().toUpperCase();
   if(!sym){ showError('請輸入股票代號（例：2330）'); return; }
   hideError(); setStatus('loading');
-
-  // 重置財報區
-  const finSec=$('fin-section'); if(finSec) finSec.style.display='none';
-  STATE.annualRendered = false; STATE.finData = null;
-  // 重置 tab 回季報
-  document.querySelectorAll('.fin-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='quarterly'));
-  ['quarterly','monthly','annual'].forEach(t=>{ const p=$('fin-panel-'+t); if(p) p.style.display=t==='quarterly'?'flex':'none'; });
-  Object.values(FIN_CHARTS).forEach(c=>c?.dispose());
-  Object.keys(FIN_CHARTS).forEach(k=>delete FIN_CHARTS[k]);
 
   // 更新 topbar 查詢狀態
   const tnWrap=$('topbar-stock-name');
@@ -2285,11 +1717,6 @@ async function queryStock(){
 
     readParams(); recomputeAndRender();
     setStatus('live'); setTime();
-
-    // 非同步載入財報（不阻塞 K 線顯示）
-    renderFinancials(sym, data.meta).catch(e=>{
-      console.warn('[TechBoard] 財報載入:', e.message);
-    });
 
   }catch(e){
     console.error('[TechBoard] 載入失敗:', e);
@@ -2455,6 +1882,38 @@ function renderHeader(meta){
 // ══════════════════════════════════════════
 // 主流程
 // ══════════════════════════════════════════
+// 主題切換
+const ECHARTS_DARK_BG  = '#0d1117';
+const ECHARTS_LIGHT_BG = '#ffffff';
+
+function setTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  // 按鈕 active 狀態
+  document.getElementById('btn-dark') .classList.toggle('active', theme==='dark');
+  document.getElementById('btn-light').classList.toggle('active', theme==='light');
+  // 儲存偏好
+  try{ localStorage.setItem('techboard_theme', theme); }catch(_){}
+  // ECharts 背景色同步（canvas 不繼承 CSS 變數）
+  const bg = theme==='light' ? ECHARTS_LIGHT_BG : ECHARTS_DARK_BG;
+  const textClr = theme==='light' ? '#1a2235' : '#dde4f0';
+  const axisClr = theme==='light' ? '#b8c0cc' : '#1a2130';
+  const splitClr= theme==='light' ? '#eaecf0' : '#111820';
+  Object.values(CHARTS).forEach(c=>{
+    if(!c) return;
+    c.setOption({ backgroundColor: bg,
+      xAxis: { axisLine:{lineStyle:{color:axisClr}}, axisLabel:{color:textClr}, splitLine:{lineStyle:{color:splitClr}} },
+      yAxis: { axisLine:{lineStyle:{color:axisClr}}, axisLabel:{color:textClr}, splitLine:{lineStyle:{color:splitClr}} },
+    }, false);
+  });
+  Object.values(FIN_CHARTS).forEach(c=>{
+    if(!c) return;
+    c.setOption({ backgroundColor: bg,
+      xAxis: { axisLine:{lineStyle:{color:axisClr}}, axisLabel:{color:textClr}, splitLine:{lineStyle:{color:splitClr}} },
+      yAxis: { axisLine:{lineStyle:{color:axisClr}}, axisLabel:{color:textClr}, splitLine:{lineStyle:{color:splitClr}} },
+    }, false);
+  });
+}
+
 // K線縮放按鈕
 function zoomChart(n){
   const total = STATE.rawData?.candles?.length || 500;
@@ -2487,6 +1946,9 @@ function recomputeAndRender(){
     if(CHARTS[k]){ CHARTS[k].dispose(); CHARTS[k]=null; }
   });
   renderAllCharts(candles, meta);
+  // 財報（有 token 才執行）
+  if(getFinToken()) renderFinancials(meta.symbol, meta).catch(e=>console.warn('fin:',e));
+  else { const s=document.getElementById('fin-section'); if(s) s.style.display='none'; }
   // mini chart resize after DOM settles
   setTimeout(()=>{
     ['miniKd','miniMacd','miniVol2'].forEach(k=>CHARTS[k]?.resize());
@@ -3744,6 +3206,13 @@ function renderAllCharts(candles, meta){
 // 啟動
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', ()=>{
+  // 載入 FinMind Token UI
+  updateFinTokenUI(getFinToken());
+  // 載入使用者儲存的主題
+  try{
+    const savedTheme = localStorage.getItem('techboard_theme') || 'dark';
+    setTheme(savedTheme);
+  }catch(_){ setTheme('dark'); }
   // 載入使用者儲存的參數預設值
   try{
     const saved = localStorage.getItem('techboard_params');
