@@ -274,6 +274,14 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 .fin-spinner{width:16px;height:16px;border:2px solid var(--bd2);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 #fin-mq-grid{display:none;}
+/* 財報 Tab */
+.fin-tab-bar{display:flex;gap:4px;padding:2px 0 6px;}
+.fin-tab{background:var(--bg2);border:1px solid var(--bd1);border-radius:4px;
+  color:var(--tx3);font-size:11px;font-weight:600;padding:5px 16px;cursor:pointer;
+  transition:background .15s,color .15s,border-color .15s;}
+.fin-tab:hover{background:var(--bg3);color:var(--tx2);}
+.fin-tab.active{background:var(--cyan);border-color:var(--cyan);color:#0d1117;}
+.fin-tab-panel{display:flex;flex-direction:column;gap:6px;}
 #fin-monthly-table-card{display:none;}
 #fin-quarterly-table-card{display:none;}
 @media(max-width:767px){.fin-charts-grid{grid-template-columns:1fr;} .fin-kpi{min-width:100px;}}
@@ -705,97 +713,100 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
     <div class="fin-kpi"><div class="fin-kpi-lbl">52週高低</div><div class="fin-kpi-val" id="fk-52w">—</div><div class="fin-kpi-sub" id="fk-52w-pos">—</div></div>
   </div>
 
-  <!-- 財報圖表網格 -->
-  <div class="fin-charts-grid">
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">營收 Revenue <span id="fin-rev-unit">（億元）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-rev"></div>
-    </div>
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">稅後淨利 Net Income <span id="fin-ni-unit">（億元）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-ni"></div>
-    </div>
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">毛利率 / 營業利益率 <span>（%）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-margin"></div>
-    </div>
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">EPS 每股盈餘 <span>（元）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-eps"></div>
-    </div>
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">現金股利 Cash Dividend <span>（元/股）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-div"></div>
-    </div>
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">ROE / ROA <span>（%）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-roe"></div>
-    </div>
+  <!-- 財報 Tab 導覽 -->
+  <div class="fin-tab-bar" id="fin-tab-bar">
+    <button class="fin-tab active" data-tab="quarterly" onclick="switchFinTab('quarterly')">季報</button>
+    <button class="fin-tab" data-tab="monthly" onclick="switchFinTab('monthly')">月營收</button>
+    <button class="fin-tab" data-tab="annual" onclick="switchFinTab('annual')">年報</button>
   </div>
 
-  <!-- 月營收 + 季財報圖表 -->
-  <div class="fin-charts-grid" id="fin-mq-grid">
-
-    <!-- 月營收趨勢 -->
-    <div class="fin-chart-card" style="grid-column:1/-1">
-      <div class="fin-chart-title">
-        每月營收 Monthly Revenue
-        <span id="fin-monthly-unit">（億元）</span>
-        <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
-          <span style="display:flex;align-items:center;gap:3px;font-size:9px;color:#22d3ee">
-            <span style="width:12px;height:2px;background:#22d3ee;display:inline-block;border-radius:1px"></span>月營收
-          </span>
-          <span style="display:flex;align-items:center;gap:3px;font-size:9px;color:#f59e0b">
-            <span style="width:12px;height:2px;background:#f59e0b;display:inline-block;border-radius:1px;border-top:1px dashed #f59e0b"></span>YoY%
-          </span>
-        </div>
+  <!-- ① 季報面板（預設顯示）-->
+  <div class="fin-tab-panel" id="fin-panel-quarterly">
+    <div class="fin-charts-grid">
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">季營收 Quarterly Revenue <span>（億元）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-qrev" style="height:220px"></div>
       </div>
-      <div class="fin-chart-wrap" id="fin-chart-monthly" style="height:240px"></div>
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">季EPS Quarterly EPS <span>（元）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-qeps" style="height:220px"></div>
+      </div>
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">季毛利率 / 營益率 <span>（%）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-qmargin" style="height:220px"></div>
+      </div>
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">季淨利 Quarterly Net Income <span>（億元）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-qni" style="height:220px"></div>
+      </div>
     </div>
-
-    <!-- 季營收 -->
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">季營收 Quarterly Revenue <span>（億元）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-qrev" style="height:220px"></div>
+    <div class="fin-table-card" id="fin-quarterly-table-card">
+      <div class="fin-chart-title" style="margin-bottom:8px">近12季財報摘要</div>
+      <div id="fin-quarterly-table-wrap"><div class="fin-loading"><div class="fin-spinner"></div>載入中…</div></div>
     </div>
-
-    <!-- 季EPS -->
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">季EPS Quarterly EPS <span>（元）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-qeps" style="height:220px"></div>
-    </div>
-
-    <!-- 季毛利率 / 營益率 -->
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">季毛利率 / 營益率 <span>（%）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-qmargin" style="height:220px"></div>
-    </div>
-
-    <!-- 季淨利 -->
-    <div class="fin-chart-card">
-      <div class="fin-chart-title">季淨利 Quarterly Net Income <span>（億元）</span></div>
-      <div class="fin-chart-wrap" id="fin-chart-qni" style="height:220px"></div>
-    </div>
-
   </div>
 
-  <!-- 月營收摘要表 -->
-  <div class="fin-table-card" id="fin-monthly-table-card">
-    <div class="fin-chart-title" style="margin-bottom:8px">
-      近24月營收明細
-      <span id="fin-monthly-yoy-summary" style="font-size:10px;color:var(--tx3)"></span>
+  <!-- ② 月營收面板（點選才顯示）-->
+  <div class="fin-tab-panel" id="fin-panel-monthly" style="display:none">
+    <div class="fin-charts-grid">
+      <div class="fin-chart-card" style="grid-column:1/-1">
+        <div class="fin-chart-title">
+          每月營收 Monthly Revenue
+          <span id="fin-monthly-unit">（億元）</span>
+          <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
+            <span style="display:flex;align-items:center;gap:3px;font-size:9px;color:#22d3ee">
+              <span style="width:12px;height:2px;background:#22d3ee;display:inline-block;border-radius:1px"></span>月營收
+            </span>
+            <span style="display:flex;align-items:center;gap:3px;font-size:9px;color:#f59e0b">
+              <span style="width:12px;height:2px;background:#f59e0b;display:inline-block;border-radius:1px;border-top:1px dashed #f59e0b"></span>YoY%
+            </span>
+          </div>
+        </div>
+        <div class="fin-chart-wrap" id="fin-chart-monthly" style="height:240px"></div>
+      </div>
     </div>
-    <div id="fin-monthly-table-wrap"><div class="fin-loading"><div class="fin-spinner"></div>載入中…</div></div>
+    <div class="fin-table-card" id="fin-monthly-table-card">
+      <div class="fin-chart-title" style="margin-bottom:8px">
+        近24月營收明細
+        <span id="fin-monthly-yoy-summary" style="font-size:10px;color:var(--tx3)"></span>
+      </div>
+      <div id="fin-monthly-table-wrap"><div class="fin-loading"><div class="fin-spinner"></div>載入中…</div></div>
+    </div>
   </div>
 
-  <!-- 季財報摘要表 -->
-  <div class="fin-table-card" id="fin-quarterly-table-card">
-    <div class="fin-chart-title" style="margin-bottom:8px">近12季財報摘要</div>
-    <div id="fin-quarterly-table-wrap"><div class="fin-loading"><div class="fin-spinner"></div>載入中…</div></div>
-  </div>
-    <div class="fin-chart-title" style="margin-bottom:8px">年度財報摘要</div>
-    <div id="fin-table-wrap"><div class="fin-loading"><div class="fin-spinner"></div>載入財報資料中…</div></div>
-    <div class="fin-source" id="fin-table-source">—</div>
+  <!-- ③ 年報面板（點選才渲染）-->
+  <div class="fin-tab-panel" id="fin-panel-annual" style="display:none">
+    <div class="fin-charts-grid" id="fin-annual-charts-grid">
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">營收 Revenue <span id="fin-rev-unit">（億元）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-rev"></div>
+      </div>
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">稅後淨利 Net Income <span id="fin-ni-unit">（億元）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-ni"></div>
+      </div>
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">毛利率 / 營業利益率 <span>（%）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-margin"></div>
+      </div>
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">EPS 每股盈餘 <span>（元）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-eps"></div>
+      </div>
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">現金股利 Cash Dividend <span>（元/股）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-div"></div>
+      </div>
+      <div class="fin-chart-card">
+        <div class="fin-chart-title">ROE / ROA <span>（%）</span></div>
+        <div class="fin-chart-wrap" id="fin-chart-roe"></div>
+      </div>
+    </div>
+    <div class="fin-table-card">
+      <div class="fin-chart-title" style="margin-bottom:8px">年度財報摘要</div>
+      <div id="fin-table-wrap"><div class="fin-loading"><div class="fin-spinner"></div>載入財報資料中…</div></div>
+      <div class="fin-source" id="fin-table-source">—</div>
+    </div>
   </div>
 
 </div><!-- /fin-section -->
@@ -1709,23 +1720,54 @@ async function renderFinancials(symbol, yahooMeta){
 
   if(!finData){ setText('fin-table-wrap','<div class="fin-loading">查無財報資料（此股票尚未收錄）</div>'); return; }
 
-  // ── 畫圖 ──
-  renderFinCharts(finData, sym);
-  renderFinTable(finData);
-  setText('fin-table-source', `資料來源：${finData.source}　最後更新：${finData.years?.slice(-1)[0]||'—'}年`);
+  // 儲存 finData 供年報 lazy 渲染使用
+  STATE.finData = finData;
+  STATE.finDataSym = sym;
+  STATE.annualRendered = false;
 
-  // 月營收 + 季財報
-  renderMonthlyRevenue(sym);
+  // ── 第一批：季報（預設 tab，立即渲染）──
   renderQuarterly(sym);
 
-  setTimeout(()=>Object.values(FIN_CHARTS).forEach(c=>c?.resize()), 150);
+  // ── 第二批：月營收（讓瀏覽器先繪製季報再繼續）──
+  setTimeout(()=>{
+    renderMonthlyRevenue(sym);
+    setTimeout(()=>Object.values(FIN_CHARTS).forEach(c=>c?.resize()), 100);
+  }, 80);
+  // 年報：等使用者點選 tab 時才 renderFinCharts / renderFinTable
+}
+
+// 財報 Tab 切換
+function switchFinTab(tab){
+  // 更新按鈕狀態
+  document.querySelectorAll('.fin-tab').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.tab===tab);
+  });
+  // 切換面板
+  ['quarterly','monthly','annual'].forEach(t=>{
+    const p=$('fin-panel-'+t);
+    if(p) p.style.display = t===tab ? 'flex' : 'none';
+  });
+  // 年報：lazy 渲染（只跑一次）
+  if(tab==='annual' && !STATE.annualRendered && STATE.finData){
+    renderFinCharts(STATE.finData, STATE.finDataSym);
+    renderFinTable(STATE.finData);
+    setText('fin-table-source', `資料來源：${STATE.finData.source}　最後更新：${STATE.finData.years?.slice(-1)[0]||'—'}年`);
+    STATE.annualRendered = true;
+    setTimeout(()=>{
+      ['fin-chart-rev','fin-chart-ni','fin-chart-margin','fin-chart-eps','fin-chart-div','fin-chart-roe']
+        .forEach(id=>FIN_CHARTS[id]?.resize());
+    }, 100);
+  }
+  // resize 當前 tab 圖表（確保尺寸正確）
+  setTimeout(()=>Object.values(FIN_CHARTS).forEach(c=>c?.resize()), 50);
 }
 
 // 財報圖表初始化
 function initFinChart(id){
   const el=$(id); if(!el) return null;
   if(FIN_CHARTS[id]) FIN_CHARTS[id].dispose();
-  const c=echarts.init(el,null,{renderer:'canvas'});
+  // SVG renderer：財報靜態圖表比 canvas 更快初始化、記憶體佔用更少
+  const c=echarts.init(el,null,{renderer:'svg'});
   FIN_CHARTS[id]=c;
   return c;
 }
@@ -2170,6 +2212,10 @@ async function queryStock(){
 
   // 重置財報區
   const finSec=$('fin-section'); if(finSec) finSec.style.display='none';
+  STATE.annualRendered = false; STATE.finData = null;
+  // 重置 tab 回季報
+  document.querySelectorAll('.fin-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='quarterly'));
+  ['quarterly','monthly','annual'].forEach(t=>{ const p=$('fin-panel-'+t); if(p) p.style.display=t==='quarterly'?'flex':'none'; });
   Object.values(FIN_CHARTS).forEach(c=>c?.dispose());
   Object.keys(FIN_CHARTS).forEach(k=>delete FIN_CHARTS[k]);
 
