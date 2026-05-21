@@ -988,7 +988,7 @@ async function fetchWithProxy(url, proxyIdx=0){
   const proxyUrl = CORS_PROXIES[proxyIdx](url);
   const r = await fetch(proxyUrl, {
     headers:{'Accept':'application/json'},
-    signal: AbortSignal.timeout(12000),
+    signal: AbortSignal.timeout(5000),
   });
   if(!r.ok) throw new Error(`HTTP ${r.status}`);
   const text = await r.text();
@@ -999,16 +999,17 @@ async function fetchWithProxy(url, proxyIdx=0){
 
 async function fetchYahooChart(ticker, range='6mo', interval='1d'){
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}&includePrePost=false`;
-  // 嘗試每個 proxy
-  let lastErr;
-  for(let i=0;i<CORS_PROXIES.length;i++){
-    try{
-      const j = await fetchWithProxy(url, i);
-      if(j?.chart?.result?.[0]) return j.chart.result[0];
-      if(j?.chart?.error) throw new Error(j.chart.error.description||'Yahoo API error');
-    }catch(e){ lastErr=e; }
-  }
-  throw lastErr || new Error('無法取得資料');
+  // 三個 proxy 同時競速，最快回應者獲勝（Promise.any）
+  const attempts = CORS_PROXIES.map(proxy =>
+    fetch(proxy(url), { headers:{'Accept':'application/json'}, signal:AbortSignal.timeout(5000) })
+      .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(j => {
+        if(j?.chart?.error) throw new Error(j.chart.error.description||'Yahoo API error');
+        if(j?.chart?.result?.[0]) return j.chart.result[0];
+        throw new Error('無效回應');
+      })
+  );
+  return Promise.any(attempts).catch(() => { throw new Error('所有 proxy 均失敗'); });
 }
 
 // 主資料解析器
@@ -1017,18 +1018,24 @@ async function fetchStockData(symbol){
   const tickers = toYahooTicker(sym);
   const localInfo = STOCK_DB[sym] || {};
 
+  // ── sessionStorage 快取（同一分鐘內重複查詢秒回）──
+  const cacheKey = `yf_${sym}_${new Date().toISOString().slice(0,16)}`; // 每分鐘一個 key
+  try{
+    const hit = sessionStorage.getItem(cacheKey);
+    if(hit) return JSON.parse(hit);
+  }catch(_){}
+
   let result = null;
   let usedTicker = '';
   let lastErr;
 
-  // 依序嘗試 ticker
-  for(const ticker of tickers){
-    try{
-      result = await fetchYahooChart(ticker, '2y', '1d');
-      usedTicker = ticker;
-      break;
-    }catch(e){ lastErr = e; }
-  }
+  // 並行嘗試所有 ticker（Promise.any）
+  const tickerAttempts = tickers.map(ticker =>
+    fetchYahooChart(ticker, '2y', '1d').then(r => ({ result:r, usedTicker:ticker }))
+  );
+  try{
+    ({ result, usedTicker } = await Promise.any(tickerAttempts));
+  }catch(e){ lastErr = e; }
 
   if(!result) throw lastErr || new Error(`查無 ${sym} 資料`);
 
@@ -1095,7 +1102,7 @@ async function fetchStockData(symbol){
   const dateStr = marketTime.toISOString().slice(0,10);
   const timeStr = marketTime.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false});
 
-  return {
+  const ret = {
     meta:{
       symbol:        sym,
       ticker:        usedTicker,
@@ -1122,6 +1129,9 @@ async function fetchStockData(symbol){
     },
     candles,
   };
+  // 存入快取
+  try{ sessionStorage.setItem(cacheKey, JSON.stringify(ret)); }catch(_){}
+  return ret;
 }
 
 // ══════════════════════════════════════════
@@ -1656,14 +1666,9 @@ async function renderFinancials(symbol, yahooMeta){
     setKPI('fk-52w', `${kpi.lo52}~${kpi.hi52}`, '', `現價位於52週${pos}%`);
   }
 
-  // 嘗試從 Yahoo quoteSummary 取更多財報
-  let yahoofin = null;
-  try{
-    yahoofin = await fetchYahooFundamentals(ticker);
-    setText('fin-source-badge', 'Yahoo Finance（即時）');
-  }catch(e){
-    setText('fin-source-badge', '內嵌資料（精選）');
-  }
+  // Yahoo quoteSummary CORS 通常被擋，直接用內嵌資料，避免白等
+  const yahoofin = null;
+  setText('fin-source-badge', '內嵌資料（精選）');
 
   // 取得毛利率、ROE（從 Yahoo financialData 或 local）
   let gmVal = null, roeVal = null;
