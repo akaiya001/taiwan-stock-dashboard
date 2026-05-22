@@ -70,7 +70,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 .topbar-input{
   background:var(--bg0);border:1px solid var(--bd2);border-radius:4px;
   color:var(--tx1);font-family:var(--mono);font-size:14px;font-weight:600;
-  padding:6px 10px;width:96px;text-align:center;outline:none;
+  padding:6px 10px;width:110px;text-align:center;outline:none;
   transition:border-color .15s;
 }
 .topbar-input:focus{border-color:var(--cyan);}
@@ -429,7 +429,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
   </div>
   <div class="topbar-search stock-search-wrap">
     <input class="topbar-input" id="stock-input" type="text"
-      value="2330" maxlength="12" placeholder="代號 / 股名"
+      value="^TWII" maxlength="12" placeholder="代號 / 股名"
       autocomplete="off"
       oninput="onStockInput(event)"
       onkeydown="onStockKeydown(event)">
@@ -1109,40 +1109,151 @@ const STOCK_DB = {
 };
 
 // ══════════════════════════════════════════
-// 股名 / 代號模糊搜尋（Autocomplete）
+// 全市場股票清單 + 股名模糊搜尋（Autocomplete）
 // ══════════════════════════════════════════
 
-/** 建立 name→code 反向索引（含拼音/注音首字拆解略，直接用字串包含） */
+/**
+ * FULL_STOCK_MAP: { code → { name, type } }
+ * 啟動時由 FinMind TaiwanStockInfo 填入，涵蓋全市場
+ * 預先內建常用股 + 大盤指數，確保離線/API失敗仍可用
+ */
+const FULL_STOCK_MAP = {
+  '^TWII':{ name:'台灣加權指數', type:'指數' },
+  '^TWOII':{ name:'台灣櫃買指數', type:'指數' },
+  '0050':{ name:'元大台灣50', type:'ETF' },
+  '0056':{ name:'元大高股息', type:'ETF' },
+  '00878':{ name:'國泰永續高股息', type:'ETF' },
+  '00900':{ name:'富邦特選高股息30', type:'ETF' },
+  '2330':{ name:'台積電', type:'股票' },
+  '2317':{ name:'鴻海', type:'股票' },
+  '2454':{ name:'聯發科', type:'股票' },
+  '2382':{ name:'廣達', type:'股票' },
+  '2308':{ name:'台達電', type:'股票' },
+  '2383':{ name:'台光電', type:'股票' },
+  '3017':{ name:'奇宏科技', type:'股票' },
+  '6669':{ name:'緯穎', type:'股票' },
+  '2345':{ name:'智邦', type:'股票' },
+  '2303':{ name:'聯電', type:'股票' },
+  '2412':{ name:'中華電', type:'股票' },
+  '2886':{ name:'兆豐金', type:'股票' },
+  '6505':{ name:'台塑化', type:'股票' },
+  '2881':{ name:'富邦金', type:'股票' },
+  '2882':{ name:'國泰金', type:'股票' },
+  '2891':{ name:'中信金', type:'股票' },
+  '2892':{ name:'第一金', type:'股票' },
+  '5880':{ name:'合庫金', type:'股票' },
+  '1301':{ name:'台塑', type:'股票' },
+  '1303':{ name:'南亞', type:'股票' },
+  '1326':{ name:'台化', type:'股票' },
+  '2002':{ name:'中鋼', type:'股票' },
+  '2207':{ name:'和泰車', type:'股票' },
+  '2357':{ name:'華碩', type:'股票' },
+  '2376':{ name:'技嘉', type:'股票' },
+  '2379':{ name:'瑞昱', type:'股票' },
+  '2395':{ name:'研華', type:'股票' },
+  '3008':{ name:'大立光', type:'股票' },
+  '3034':{ name:'聯詠', type:'股票' },
+  '3045':{ name:'台灣大', type:'股票' },
+  '3481':{ name:'群創', type:'股票' },
+  '4904':{ name:'遠傳', type:'股票' },
+  '4938':{ name:'和碩', type:'股票' },
+  '5347':{ name:'世界先進', type:'股票' },
+  '6415':{ name:'矽力-KY', type:'股票' },
+  '6446':{ name:'藥華藥', type:'股票' },
+  '6488':{ name:'環球晶', type:'股票' },
+  '6770':{ name:'力積電', type:'股票' },
+  '8046':{ name:'南電', type:'股票' },
+  '9910':{ name:'豐泰', type:'股票' },
+  '2823':{ name:'中壽', type:'股票' },
+  '2880':{ name:'華南金', type:'股票' },
+  '2883':{ name:'開發金', type:'股票' },
+  '2884':{ name:'玉山金', type:'股票' },
+  '2885':{ name:'元大金', type:'股票' },
+  '2887':{ name:'台新金', type:'股票' },
+  '2888':{ name:'新光金', type:'股票' },
+  '2890':{ name:'永豐金', type:'股票' },
+  '2609':{ name:'陽明', type:'股票' },
+  '2615':{ name:'萬海', type:'股票' },
+  '2603':{ name:'長榮', type:'股票' },
+  '2610':{ name:'華航', type:'股票' },
+  '2618':{ name:'長榮航', type:'股票' },
+  '2049':{ name:'上銀', type:'股票' },
+  '2059':{ name:'川湖', type:'股票' },
+  '6176':{ name:'瑞儀', type:'股票' },
+  '3711':{ name:'日月光投控', type:'股票' },
+  '2408':{ name:'南亞科', type:'股票' },
+  '3006':{ name:'晶豪科', type:'股票' },
+  '4763':{ name:'材料-KY', type:'股票' },
+  '6271':{ name:'同欣電', type:'股票' },
+  '2404':{ name:'漢唐', type:'股票' },
+  '1590':{ name:'亞德客-KY', type:'股票' },
+  '2474':{ name:'可成', type:'股票' },
+};
+
+/** 從 FinMind TaiwanStockInfo 拉取完整清單（非阻斷式，背景執行） */
+async function fetchFullStockList(){
+  try{
+    // 先試 CF Worker（已有 token）
+    const workerUrl = getWorkerUrl();
+    let url = '';
+    if(workerUrl){
+      url = `${workerUrl}?dataset=TaiwanStockInfo`;
+    } else {
+      url = 'https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo';
+    }
+    const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const json = await r.json();
+    const rows = json.data || [];
+    let count = 0;
+    for(const row of rows){
+      const code = (row.stock_id || '').trim();
+      const name = (row.stock_name || '').trim();
+      const type = (row.type || '').trim();
+      if(!code || !name) continue;
+      // 不覆蓋已有更完整資訊的指數
+      if(!FULL_STOCK_MAP[code]){
+        FULL_STOCK_MAP[code] = { name, type };
+        count++;
+      }
+    }
+    console.log(`[TechBoard] 股票清單載入完成，新增 ${count} 檔，總計 ${Object.keys(FULL_STOCK_MAP).length} 檔`);
+  } catch(e){
+    console.warn('[TechBoard] 股票清單載入失敗（使用內建清單）:', e.message);
+  }
+}
+
+/** 模糊搜尋：從 FULL_STOCK_MAP 搜尋，並補入 STOCK_DB 的 industry */
 function buildSuggestList(query){
   const q = query.trim();
   if(!q) return [];
-  const isCode = /^\d/.test(q); // 數字開頭 → 代號模式
+  const isCode = /^[\^]?\d/.test(q) || q.startsWith('^'); // 數字或^開頭 → 代號模式
   const results = [];
 
-  for(const [code, info] of Object.entries(STOCK_DB)){
+  for(const [code, info] of Object.entries(FULL_STOCK_MAP)){
     let score = 0;
     let matchField = '';
 
     if(isCode){
-      if(code.startsWith(q)){
-        score = q.length === code.length ? 100 : 80 - (code.length - q.length);
+      const cq = q.replace('^','').toLowerCase();
+      const cc = code.replace('^','').toLowerCase();
+      if(cc.startsWith(cq)){
+        score = cq.length === cc.length ? 100 : 80 - (cc.length - cq.length);
         matchField = 'code';
       }
     } else {
-      // 名稱完全符合
       if(info.name === q){ score = 100; matchField = 'name'; }
-      // 名稱開頭
       else if(info.name.startsWith(q)){ score = 85; matchField = 'name'; }
-      // 名稱包含
       else if(info.name.includes(q)){ score = 60; matchField = 'name'; }
-      // 產業包含
-      else if(info.industry && info.industry.includes(q)){ score = 30; matchField = 'industry'; }
     }
 
-    if(score > 0) results.push({ code, info, score, matchField, query: q });
+    if(score > 0){
+      const extra = STOCK_DB[code] || {};
+      results.push({ code, info:{ ...info, industry: extra.industry||info.type||'' }, score, matchField, query: q });
+    }
   }
 
-  return results.sort((a,b) => b.score - a.score).slice(0, 8);
+  return results.sort((a,b) => b.score - a.score).slice(0, 10);
 }
 
 /** highlight 命中子字串 */
@@ -1155,18 +1266,16 @@ function hlText(str, q){
     + str.slice(idx + q.length);
 }
 
-let _sgActive = -1; // keyboard nav index
+let _sgActive = -1;
 
 function renderSuggest(items){
   const ul = document.getElementById('stock-suggest');
   _sgActive = -1;
   if(!items.length){ ul.className=''; ul.innerHTML=''; return; }
 
-  ul.innerHTML = items.map((it, i) => {
-    const codeHl = it.matchField === 'code'
-      ? hlText(it.code, it.query) : it.code;
-    const nameHl = it.matchField === 'name'
-      ? hlText(it.info.name, it.query) : it.info.name;
+  ul.innerHTML = items.map((it) => {
+    const codeHl = it.matchField === 'code' ? hlText(it.code, it.query) : it.code;
+    const nameHl = it.matchField === 'name' ? hlText(it.info.name, it.query) : it.info.name;
     return `<li data-code="${it.code}" onclick="selectSuggest('${it.code}')">
       <span class="sg-code">${codeHl}</span>
       <span class="sg-name">${nameHl}</span>
@@ -1213,20 +1322,16 @@ function onStockKeydown(e){
   if(e.key === 'Enter'){
     e.preventDefault();
     if(_sgActive >= 0 && items[_sgActive]){
-      const code = items[_sgActive].dataset.code;
-      selectSuggest(code);
+      selectSuggest(items[_sgActive].dataset.code);
     } else {
       closeSuggest();
       queryStock();
     }
     return;
   }
-  if(e.key === 'Escape'){
-    closeSuggest();
-  }
+  if(e.key === 'Escape') closeSuggest();
 }
 
-// 點外部關閉
 document.addEventListener('click', e => {
   if(!e.target.closest('.stock-search-wrap')) closeSuggest();
 });
@@ -2195,14 +2300,16 @@ async function queryStock(){
   let raw = $('stock-input').value.trim();
   if(!raw){ showError('請輸入股票代號或股名（例：2330 或 台積電）'); return; }
 
-  // ── 股名 → 代號 反查 ──
-  // 若輸入非數字開頭，嘗試在 STOCK_DB 中查名稱
-  if(!/^\d/.test(raw)){
-    const matched = Object.entries(STOCK_DB).find(([,v]) => v.name === raw)
-      || Object.entries(STOCK_DB).find(([,v]) => v.name.includes(raw));
+  // ── 股名 → 代號 反查（查全市場 FULL_STOCK_MAP）──
+  if(!/^[\^]?\d/.test(raw) && !raw.startsWith('^')){
+    // 純文字輸入 → 查股名
+    const matched =
+      Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name === raw) ||
+      Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.startsWith(raw)) ||
+      Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.includes(raw));
     if(matched){
-      raw = matched[0]; // 取代號
-      $('stock-input').value = raw; // 回填 input
+      raw = matched[0];
+      $('stock-input').value = raw;
     } else {
       showError(`找不到「${raw}」，請確認股名或直接輸入代號`); return;
     }
@@ -3732,6 +3839,8 @@ function renderAllCharts(candles, meta){
 window.addEventListener('DOMContentLoaded', ()=>{
   // 載入 FinMind Token UI
   updateFinTokenUI(getWorkerUrl());
+  // 背景載入全市場股票清單（用於搜尋自動補全）
+  fetchFullStockList();
   // 載入使用者儲存的主題
   try{
     const savedTheme = localStorage.getItem('techboard_theme') || 'dark';
