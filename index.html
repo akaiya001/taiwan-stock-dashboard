@@ -915,15 +915,15 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 <!-- FinMind Token 設定 -->
 <div class="fin-token-bar" id="fin-token-bar">
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:var(--cyan)">🔑 FinMind Token</span>
-    <span style="font-size:10px;color:var(--tx3)">免費註冊取得 →</span>
-    <a href="https://finmindtrade.com/" target="_blank"
-       style="font-size:10px;color:var(--cyan);text-decoration:none">finmindtrade.com</a>
+    <span style="font-size:12px;font-weight:700;color:var(--cyan)">🔗 財報 Worker URL</span>
+    <span style="font-size:10px;color:var(--tx3)">部署說明 →</span>
+    <a href="https://github.com/akaiya001/taiwan-stock-dashboard#worker" target="_blank"
+       style="font-size:10px;color:var(--cyan);text-decoration:none">查看教學</a>
     <span id="fin-token-status" style="font-size:10px;padding:2px 8px;border-radius:3px;
       background:var(--bg3);color:var(--tx3);border:1px solid var(--bd2)">未設定</span>
   </div>
   <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:260px">
-    <input id="fin-token-input" type="password" placeholder="貼上 FinMind API Token…"
+    <input id="fin-token-input" type="text" placeholder="https://your-worker.workers.dev"
       style="flex:1;background:var(--bg0);border:1px solid var(--bd2);border-radius:4px;
         color:var(--tx1);font-family:var(--mono);font-size:12px;padding:6px 10px;outline:none;
         transition:border-color .15s;min-width:0"
@@ -1279,32 +1279,37 @@ const FIN_CHARTS = {};
 // ══════════════════════════════════════════
 // FinMind Token 管理
 // ══════════════════════════════════════════
-const FM_BASE = 'https://api.finmindtrade.com/api/v4/data';
-const FM_CACHE = {};   // sessionStorage key → parsed data
+const FM_CACHE = {};
 
-function getFinToken(){
-  try{ return localStorage.getItem('techboard_fintoken') || ''; }catch(_){ return ''; }
+// Worker URL 管理（取代直接呼叫 FinMind，繞過 CORS）
+function getWorkerUrl(){
+  try{ return (localStorage.getItem('techboard_worker_url') || '').replace(/\/+$/, ''); }catch(_){ return ''; }
 }
+function getFinToken(){ return getWorkerUrl(); } // 相容舊呼叫
+
 function saveFinToken(){
   const t = document.getElementById('fin-token-input')?.value?.trim() || '';
-  if(!t){ showFinTokenStatus('請輸入 Token', 'warn'); return; }
-  try{ localStorage.setItem('techboard_fintoken', t); }catch(_){}
+  if(!t){ showFinTokenStatus('請輸入 Worker URL'); return; }
+  if(!t.startsWith('https://')){
+    showFinTokenStatus('❌ URL 須以 https:// 開頭'); return;
+  }
+  try{ localStorage.setItem('techboard_worker_url', t); }catch(_){}
   document.getElementById('fin-token-input').value = '';
   updateFinTokenUI(t);
-  showFinTokenStatus('✅ Token 已儲存，重新查詢以載入財報', 'ok');
+  showFinTokenStatus('✅ 已儲存，重新查詢個股以載入財報');
 }
 function clearFinToken(){
-  try{ localStorage.removeItem('techboard_fintoken'); }catch(_){}
+  try{ localStorage.removeItem('techboard_worker_url'); }catch(_){}
   updateFinTokenUI('');
-  showFinTokenStatus('Token 已清除', 'warn');
   const sec = document.getElementById('fin-section');
   if(sec) sec.style.display = 'none';
 }
-function updateFinTokenUI(token){
+function updateFinTokenUI(url){
   const s = document.getElementById('fin-token-status');
   if(!s) return;
-  if(token){
-    s.textContent = '✅ 已設定（' + token.slice(0,6) + '…）';
+  if(url){
+    const short = url.replace('https://','').split('/')[0];
+    s.textContent = '✅ ' + short;
     s.style.background = 'rgba(29,184,90,.15)';
     s.style.color = 'var(--dn)';
     s.style.borderColor = 'var(--dn)';
@@ -1315,26 +1320,22 @@ function updateFinTokenUI(token){
     s.style.borderColor = 'var(--bd2)';
   }
 }
-function showFinTokenStatus(msg, type){
+function showFinTokenStatus(msg){
   const s = document.getElementById('fin-token-status');
   if(!s) return;
-  const old = s.textContent;
   s.textContent = msg;
-  setTimeout(() => updateFinTokenUI(getFinToken()), 2500);
+  setTimeout(() => updateFinTokenUI(getWorkerUrl()), 2500);
 }
 
 // ── FinMind fetch helper（帶 token + cache）──
 async function fmFetch(dataset, stockId, startDate){
   const cKey = dataset + '_' + stockId + '_' + startDate;
   if(FM_CACHE[cKey]) return FM_CACHE[cKey];
-  const token = getFinToken();
-  if(!token) throw new Error('NO_TOKEN');
-  // 正確用法：Authorization: Bearer header
-  const url = `${FM_BASE}?dataset=${dataset}&data_id=${encodeURIComponent(stockId)}&start_date=${startDate}`;
-  const r = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${token}` },
-    signal: AbortSignal.timeout(15000)
-  });
+  const workerUrl = getWorkerUrl();
+  if(!workerUrl) throw new Error('NO_TOKEN');
+  // 打 CF Worker（server 端轉發，無 CORS 問題）
+  const url = `${workerUrl}?dataset=${encodeURIComponent(dataset)}&data_id=${encodeURIComponent(stockId)}&start_date=${encodeURIComponent(startDate)}`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
   if(!r.ok) throw new Error(`HTTP ${r.status}`);
   const j = await r.json();
   if(j.status !== 200) throw new Error(j.msg || 'FinMind error');
@@ -3233,7 +3234,7 @@ function renderAllCharts(candles, meta){
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', ()=>{
   // 載入 FinMind Token UI
-  updateFinTokenUI(getFinToken());
+  updateFinTokenUI(getWorkerUrl());
   // 載入使用者儲存的主題
   try{
     const savedTheme = localStorage.getItem('techboard_theme') || 'dark';
