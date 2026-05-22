@@ -411,6 +411,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
     <div class="tohlcv-item"><span class="tohlcv-lbl">開盤</span><span class="tohlcv-val" id="th-open">—</span></div>
     <div class="tohlcv-item"><span class="tohlcv-lbl">最高</span><span class="tohlcv-val up" id="th-high">—</span></div>
     <div class="tohlcv-item"><span class="tohlcv-lbl">最低</span><span class="tohlcv-val dn" id="th-low">—</span></div>
+    <div class="tohlcv-item"><span class="tohlcv-lbl">收盤</span><span class="tohlcv-val" id="th-close">—</span></div>
     <div class="tohlcv-sep"></div>
     <div class="tohlcv-item"><span class="tohlcv-lbl">成交量</span><span class="tohlcv-val" id="th-vol">—</span></div>
     <div class="tohlcv-item"><span class="tohlcv-lbl">成交額</span><span class="tohlcv-val" id="th-amt">—</span></div>
@@ -2200,9 +2201,11 @@ function renderHeader(meta){
     tChgEl.textContent=`${up?'▲':'▼'}${Math.abs(meta.change).toFixed(2)} (${up?'+':''}${meta.changePct.toFixed(2)}%)`;
     tChgEl.style.color=up?'#e84545':'#1db85a';
   }
-  setText('th-open', fmtNum(meta.open,2));
-  setText('th-high', fmtNum(meta.high,2));
-  setText('th-low',  fmtNum(meta.low,2));
+  setText('th-open',  fmtNum(meta.open,2));
+  setText('th-high',  fmtNum(meta.high,2));
+  setText('th-low',   fmtNum(meta.low,2));
+  const thClose=$('th-close');
+  if(thClose){ thClose.textContent=fmtNum(meta.close,2); thClose.className='tohlcv-val '+(up?'up':'dn'); }
   setText('th-vol',  fmtInt(meta.volume)+'張');
   setText('th-amt',  fmtNum(meta.turnover,1)+'億');
   setText('th-date', timeDisp);
