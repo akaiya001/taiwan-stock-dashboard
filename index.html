@@ -2868,10 +2868,17 @@ function renderAllCharts(candles, meta){
           emphasis:{handleStyle:{color:'#22d3ee'}}},
       ],
       series:[
-        { name:'HL', type:'bar',
-          data:candles.map(c=>c.high-c.low),
-          base:candles.map(c=>c.low),
-          itemStyle:{color:(_,i)=>cClr[i]}, barMaxWidth:2, z:2,
+        // K線主體：使用 candlestick type（最正確）
+        { name:'K線', type:'candlestick',
+          data:candles.map(c=>[c.open, c.close, c.low, c.high]),
+          barMaxWidth:12,
+          itemStyle:{
+            color:'#e84545',        // 陽線實體
+            color0:'#1db85a',       // 陰線實體
+            borderColor:'#e84545',  // 陽線邊框
+            borderColor0:'#1db85a', // 陰線邊框
+            borderWidth:1,
+          }, z:3,
           markPoint:{ silent:true, symbolSize:1,
             label:{ fontSize:9, fontWeight:700, fontFamily:'Consolas,monospace',
               color:'#fff', padding:[2,5], borderRadius:2 },
@@ -2887,10 +2894,6 @@ function renderAllCharts(candles, meta){
                 itemStyle:{color:'#1db85a'},
                 label:{color:'#fff', backgroundColor:'#1db85a', formatter:p=>'▼ '+p.value, position:'bottom'} },
             ]} },
-        { name:'OC', type:'bar',
-          data:candles.map(c=>Math.max(Math.abs(c.close-c.open),.1)),
-          base:candles.map(c=>Math.min(c.open,c.close)),
-          itemStyle:{color:(_,i)=>cClr[i]}, barMaxWidth:8, z:3 },
         { name:`MA${p.ma1}`, type:'line', data:ma1, symbol:'none', z:4,
           lineStyle:{color:'#f59e0b',width:1.2} },
         { name:`MA${p.ma2}`, type:'line', data:ma2, symbol:'none', z:4,
