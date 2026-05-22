@@ -1329,8 +1329,12 @@ async function fmFetch(dataset, stockId, startDate){
   if(FM_CACHE[cKey]) return FM_CACHE[cKey];
   const token = getFinToken();
   if(!token) throw new Error('NO_TOKEN');
-  const url = `${FM_BASE}?dataset=${dataset}&data_id=${encodeURIComponent(stockId)}&start_date=${startDate}&token=${encodeURIComponent(token)}`;
-  const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  // 正確用法：Authorization: Bearer header
+  const url = `${FM_BASE}?dataset=${dataset}&data_id=${encodeURIComponent(stockId)}&start_date=${startDate}`;
+  const r = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    signal: AbortSignal.timeout(15000)
+  });
   if(!r.ok) throw new Error(`HTTP ${r.status}`);
   const j = await r.json();
   if(j.status !== 200) throw new Error(j.msg || 'FinMind error');
@@ -1378,6 +1382,7 @@ async function renderFinancials(sym, yahooMeta){
   const fmt = d => d.toISOString().slice(0, 10);
 
   try {
+    console.log('[FinMind] fetching for', sym);
     const [incomeRaw, monthRaw, divRaw] = await Promise.allSettled([
       fmFetch('TaiwanStockFinancialStatements', sym, fmt(startIncome)),
       fmFetch('TaiwanStockMonthRevenue',        sym, fmt(startRev)),
@@ -1387,6 +1392,12 @@ async function renderFinancials(sym, yahooMeta){
     const income = incomeRaw.status === 'fulfilled' ? incomeRaw.value : [];
     const month  = monthRaw.status  === 'fulfilled' ? monthRaw.value  : [];
     const div    = divRaw.status    === 'fulfilled' ? divRaw.value    : [];
+    console.log('[FinMind] income rows:', income.length, '| month rows:', month.length, '| div rows:', div.length);
+    if(income.length) console.log('[FinMind] sample income:', income[0]);
+    if(month.length)  console.log('[FinMind] sample month:',  month[0]);
+    if(incomeRaw.status==='rejected') console.warn('[FinMind] income err:', incomeRaw.reason);
+    if(monthRaw.status ==='rejected') console.warn('[FinMind] month err:',  monthRaw.reason);
+    if(divRaw.status   ==='rejected') console.warn('[FinMind] div err:',    divRaw.reason);
 
     // 渲染季報（第一批）
     renderQuarterly(sym, income);
@@ -1470,32 +1481,40 @@ function finBase(title){
 // 季報渲染
 // ══════════════════════════════════════════
 function renderQuarterly(sym, rows){
-  // 從 TaiwanStockFinancialStatements 萃取季別資料
-  // type 欄位包含：Revenue, GrossProfit, OperatingIncome, NetIncome, EPS, GrossMargin 等
+  // TaiwanStockFinancialStatements 正確欄位：
+  // type: Revenue, GrossProfit, OperatingIncome, IncomeAfterTaxes, EPS
   const byQ = {};
   for(const r of rows){
-    const q = r.date?.slice(0,7); // e.g. "2024-03"
+    const q = r.date?.slice(0,7);
     if(!q) continue;
     if(!byQ[q]) byQ[q] = { date: q };
-    byQ[q][r.type] = parseFloat(r.value) || 0;
+    byQ[q][r.type] = parseFloat(r.value);
+  }
+  // 計算毛利率、營益率（需要 Revenue）
+  for(const q of Object.keys(byQ)){
+    const d = byQ[q];
+    const rev = d.Revenue;
+    if(rev && rev > 0){
+      d._grossMargin   = d.GrossProfit    != null ? +(d.GrossProfit    / rev * 100).toFixed(1) : null;
+      d._operatingMargin = d.OperatingIncome != null ? +(d.OperatingIncome / rev * 100).toFixed(1) : null;
+    }
   }
   const quarters = Object.keys(byQ).sort().slice(-10);
   const qd = quarters.map(q => byQ[q]);
   const labels = quarters.map(q => {
     const [y, m] = q.split('-');
-    const qi = Math.ceil(parseInt(m)/3);
-    return `${parseInt(y)-1911}Q${qi}`;
+    return `${parseInt(y)-1911}Q${Math.ceil(parseInt(m)/3)}`;
   });
 
-  // 季營收
+  // 季營收（百萬元）
   const cRev = initFinChart('fin-chart-qrev');
   if(cRev){
     const revData = qd.map(d => d.Revenue != null ? +(d.Revenue/1e6).toFixed(0) : null);
     cRev.setOption({...finBase(), xAxis:{...finBase().xAxis,data:labels},
       series:[{type:'bar',data:revData,
-        itemStyle:{color:(_,i)=> revData[i]>0?'#4a90e2':'#e84545'},
+        itemStyle:{color:(_,i)=> (revData[i]||0)>0?'#4a90e2':'#e84545'},
         label:{show:true,position:'top',fontSize:9,color:'#8494b0',
-          formatter:v=>v.value!=null?v.value+'M':''}}]}, true);
+          formatter:p=>p.value!=null?p.value+'M':''}}]}, true);
   }
 
   // 季EPS
@@ -1504,53 +1523,51 @@ function renderQuarterly(sym, rows){
     const eps = qd.map(d => d.EPS != null ? +d.EPS.toFixed(2) : null);
     cEps.setOption({...finBase(), xAxis:{...finBase().xAxis,data:labels},
       series:[{type:'bar',data:eps,
-        itemStyle:{color:(_,i)=> eps[i]>=0?'#1db85a':'#e84545'},
+        itemStyle:{color:(_,i)=> (eps[i]||0)>=0?'#1db85a':'#e84545'},
         label:{show:true,position:'top',fontSize:9,color:'#8494b0',
-          formatter:v=>v.value!=null?v.value:''}}]}, true);
+          formatter:p=>p.value!=null?p.value:''}}]}, true);
   }
 
-  // 毛利率 + 營益率
+  // 毛利率 + 營益率（由 GrossProfit/Revenue 計算）
   const cM = initFinChart('fin-chart-qmargin');
   if(cM){
-    const gm = qd.map(d => d.GrossMargin != null ? +d.GrossMargin.toFixed(1) : null);
-    const om = qd.map(d => d.OperatingMargin != null ? +d.OperatingMargin.toFixed(1) : null);
+    const gm = qd.map(d => d._grossMargin    ?? null);
+    const om = qd.map(d => d._operatingMargin ?? null);
     cM.setOption({...finBase(), legend:{top:4,right:8,textStyle:{color:'#8494b0',fontSize:10}},
       xAxis:{...finBase().xAxis,data:labels},
       series:[
         {name:'毛利率',type:'line',data:gm,smooth:true,
-          lineStyle:{color:'#22d3ee',width:2},itemStyle:{color:'#22d3ee'},
-          symbol:'circle',symbolSize:5},
+          lineStyle:{color:'#22d3ee',width:2},itemStyle:{color:'#22d3ee'},symbol:'circle',symbolSize:5},
         {name:'營益率',type:'line',data:om,smooth:true,
-          lineStyle:{color:'#f59e0b',width:2},itemStyle:{color:'#f59e0b'},
-          symbol:'circle',symbolSize:5},
+          lineStyle:{color:'#f59e0b',width:2},itemStyle:{color:'#f59e0b'},symbol:'circle',symbolSize:5},
       ]}, true);
   }
 
-  // 季淨利
+  // 季淨利（IncomeAfterTaxes）
   const cNI = initFinChart('fin-chart-qni');
   if(cNI){
-    const ni = qd.map(d => d.NetIncome != null ? +(d.NetIncome/1e6).toFixed(0) : null);
+    const ni = qd.map(d => d.IncomeAfterTaxes != null ? +(d.IncomeAfterTaxes/1e6).toFixed(0) : null);
     cNI.setOption({...finBase(), xAxis:{...finBase().xAxis,data:labels},
       series:[{type:'bar',data:ni,
-        itemStyle:{color:(_,i)=> ni[i]>=0?'#1db85a':'#e84545'}}]}, true);
+        itemStyle:{color:(_,i)=> (ni[i]||0)>=0?'#1db85a':'#e84545'}}]}, true);
   }
 
   // 季報摘要表
   const cols = quarters.slice(-8);
   const colD = cols.map(q => byQ[q]);
   const colL = cols.map(q => { const [y,m]=q.split('-'); return `${parseInt(y)-1911}Q${Math.ceil(parseInt(m)/3)}`; });
-  const pct = v => v != null ? `<span class="${v>=0?'up':'dn'}">${v.toFixed(1)}%</span>` : '—';
+  const pct = v => v != null ? `<span class="${v>=0?'up':'dn'}">${(+v).toFixed(1)}%</span>` : '—';
   const mon = v => v != null ? (v/1e6).toFixed(0)+'M' : '—';
-  const num = (v, d=2) => v != null ? (+v).toFixed(d) : '—';
+  const num = (v,d=2) => v != null ? (+v).toFixed(d) : '—';
 
   let html = `<table class="fin-table"><thead><tr>
     <th>項目</th>${colL.map(l=>`<th>${l}</th>`).join('')}
   </tr></thead><tbody>
-    <tr><td>營收(M)</td>${colD.map(d=>mon(d.Revenue)).map(v=>`<td>${v}</td>`).join('')}</tr>
-    <tr><td>毛利率</td>${colD.map(d=>pct(d.GrossMargin)).map(v=>`<td>${v}</td>`).join('')}</tr>
-    <tr><td>營益率</td>${colD.map(d=>pct(d.OperatingMargin)).map(v=>`<td>${v}</td>`).join('')}</tr>
-    <tr><td>淨利(M)</td>${colD.map(d=>mon(d.NetIncome)).map(v=>`<td>${v}</td>`).join('')}</tr>
-    <tr><td>EPS(元)</td>${colD.map(d=>num(d.EPS)).map(v=>`<td>${v}</td>`).join('')}</tr>
+    <tr><td>營收(M)</td>${colD.map(d=>`<td>${mon(d.Revenue)}</td>`).join('')}</tr>
+    <tr><td>毛利率</td>${colD.map(d=>`<td>${pct(d._grossMargin)}</td>`).join('')}</tr>
+    <tr><td>營益率</td>${colD.map(d=>`<td>${pct(d._operatingMargin)}</td>`).join('')}</tr>
+    <tr><td>淨利(M)</td>${colD.map(d=>`<td>${mon(d.IncomeAfterTaxes)}</td>`).join('')}</tr>
+    <tr><td>EPS(元)</td>${colD.map(d=>`<td>${num(d.EPS)}</td>`).join('')}</tr>
   </tbody></table>`;
   setHTML('fin-quarterly-table-wrap', html);
 }
@@ -1567,8 +1584,9 @@ function renderMonthlyRevenue(sym, rows){
   }
   const labels  = sorted.map(r => r.date.slice(2,7).replace('-','/'));
   const revs    = sorted.map(r => r.revenue != null ? +(r.revenue/1e6).toFixed(1) : null);
-  const yoyArr  = sorted.map(r => r.revenue_month_increase_ratio != null
-    ? +r.revenue_month_increase_ratio.toFixed(1) : null);
+  // 正確欄位：year_increase_ratio（YoY），month_increase_ratio（MoM）
+  const yoyArr  = sorted.map(r => r.year_increase_ratio != null
+    ? +r.year_increase_ratio.toFixed(1) : null);
 
   const cM = initFinChart('fin-chart-monthly');
   if(cM){
@@ -1600,10 +1618,10 @@ function renderMonthlyRevenue(sym, rows){
   for(const r of recent){
     const m   = r.date.slice(0,7).replace('-','/');
     const rev = r.revenue != null ? (r.revenue/1e6).toFixed(1)+'M' : '—';
-    const mom = r.revenue_month_increase_ratio != null
-      ? `<span class="${r.revenue_month_increase_ratio>=0?'up':'dn'}">${r.revenue_month_increase_ratio.toFixed(1)}%</span>` : '—';
-    const yoy = r.revenue_year_increase_ratio != null
-      ? `<span class="${r.revenue_year_increase_ratio>=0?'up':'dn'}">${r.revenue_year_increase_ratio.toFixed(1)}%</span>` : '—';
+    const mom = r.month_increase_ratio != null
+      ? `<span class="${r.month_increase_ratio>=0?'up':'dn'}">${(+r.month_increase_ratio).toFixed(1)}%</span>` : '—';
+    const yoy = r.year_increase_ratio != null
+      ? `<span class="${r.year_increase_ratio>=0?'up':'dn'}">${(+r.year_increase_ratio).toFixed(1)}%</span>` : '—';
     thtml += `<tr><td>${m}</td><td>${rev}</td><td>${mom}</td><td>${yoy}</td></tr>`;
   }
   thtml += '</tbody></table>';
@@ -1620,7 +1638,12 @@ function renderAnnual(sym, rows, divRows){
     const y = r.date?.slice(0,4);
     if(!y) continue;
     if(!byY[y]) byY[y] = { year: y };
-    byY[y][r.type] = parseFloat(r.value) || 0;
+    // 同一年可能有多季，累加 Revenue/GrossProfit/OperatingIncome/IncomeAfterTaxes，取最後 EPS
+    if(['Revenue','GrossProfit','OperatingIncome','IncomeAfterTaxes'].includes(r.type)){
+      byY[y][r.type] = (byY[y][r.type] || 0) + (parseFloat(r.value) || 0);
+    } else {
+      byY[y][r.type] = parseFloat(r.value);
+    }
   }
   const years = Object.keys(byY).sort().slice(-6);
   const yd = years.map(y => byY[y]);
@@ -1651,8 +1674,9 @@ function renderAnnual(sym, rows, divRows){
   // 毛利率趨勢
   const cM = initFinChart('fin-chart-margin');
   if(cM){
-    const gm = yd.map(d => d.GrossMargin != null ? +d.GrossMargin.toFixed(1) : null);
-    const om = yd.map(d => d.OperatingMargin != null ? +d.OperatingMargin.toFixed(1) : null);
+    // 計算年度毛利率/營益率
+    const gm = yd.map(d => (d.GrossProfit != null && d.Revenue > 0) ? +(d.GrossProfit/d.Revenue*100).toFixed(1) : null);
+    const om = yd.map(d => (d.OperatingIncome != null && d.Revenue > 0) ? +(d.OperatingIncome/d.Revenue*100).toFixed(1) : null);
     cM.setOption({...finBase(), legend:{top:4,right:8,textStyle:{color:'#8494b0',fontSize:10}},
       xAxis:{...finBase().xAxis,data:labels},
       series:[
@@ -1668,10 +1692,12 @@ function renderAnnual(sym, rows, divRows){
   // 股利
   const divByY = {};
   for(const d of (divRows||[])){
+    // FinMind TaiwanStockDividend 欄位：cash_dividend, stock_dividend, date
     const y = d.date?.slice(0,4);
     if(!y) continue;
     if(!divByY[y]) divByY[y] = 0;
-    if(d.CashExDividendTradingDate) divByY[y] += parseFloat(d.CashDividend)||0;
+    const cd = parseFloat(d.cash_dividend || d.CashDividend) || 0;
+    if(cd > 0) divByY[y] += cd;
   }
   const cD = initFinChart('fin-chart-div');
   if(cD){
