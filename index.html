@@ -1399,6 +1399,8 @@ async function renderFinancials(sym, yahooMeta){
     if(incomeRaw.status==='rejected') console.warn('[FinMind] income err:', incomeRaw.reason);
     if(monthRaw.status ==='rejected') console.warn('[FinMind] month err:',  monthRaw.reason);
     if(divRaw.status   ==='rejected') console.warn('[FinMind] div err:',    divRaw.reason);
+    // KPI 從 FinMind 資料計算（覆蓋 Yahoo meta 的空值）
+    renderFinKPIFromData(income, div, yahooMeta);
 
     // 渲染季報（第一批）
     renderQuarterly(sym, income);
@@ -1422,6 +1424,55 @@ async function renderFinancials(sym, yahooMeta){
 }
 
 // ── KPI ──
+// 從 FinMind income + div 資料計算 KPI，補充 Yahoo meta 沒有的欄位
+function renderFinKPIFromData(incomeRows, divRows, yahooMeta){
+  // 整理最近 4 季資料（TTM）
+  const byQ = {};
+  for(const r of incomeRows){
+    const q = r.date?.slice(0,7); if(!q) continue;
+    if(!byQ[q]) byQ[q] = {};
+    byQ[q][r.type] = parseFloat(r.value);
+  }
+  const quarters = Object.keys(byQ).sort().slice(-4);
+  const qd = quarters.map(q => byQ[q]);
+
+  // TTM EPS（近4季加總）
+  const epsTTM = qd.reduce((s,d) => s + (d.EPS||0), 0);
+
+  // 最新一季毛利率
+  const lastQ = qd[qd.length-1] || {};
+  const lastRev = lastQ.Revenue || 0;
+  const gmLast = (lastRev > 0 && lastQ.GrossProfit != null)
+    ? +(lastQ.GrossProfit / lastRev * 100).toFixed(1) : null;
+
+  // 最新一季 ROE = IncomeAfterTaxes / 用 EPS 估算（簡化）
+  // 用年化 EPS / 股價 = 本益比倒數 × 100 不準，跳過直接顯示 —
+
+  // P/E = 股價 / EPS TTM
+  const price = yahooMeta?.price ?? yahooMeta?.close ?? null;
+  const peCalc = (price && epsTTM > 0) ? +(price / epsTTM).toFixed(1) : null;
+
+  // 殖利率：從 TaiwanStockDividend 計算近一年現金股利 / 股價
+  const recentYear = new Date().getFullYear() - 1;
+  const cashDiv = divRows
+    .filter(d => d.date?.slice(0,4) >= String(recentYear))
+    .reduce((s,d) => s + (parseFloat(d.cash_dividend||d.CashDividend)||0), 0);
+  const dyCalc = (price && cashDiv > 0) ? +((cashDiv / price) * 100).toFixed(2) : null;
+
+  // 組合：優先用計算值，fallback 用 yahooMeta
+  const kpi = {
+    pe:  peCalc              ?? yahooMeta?.pe  ?? null,
+    pb:  yahooMeta?.pb       ?? null,
+    dy:  dyCalc              ?? yahooMeta?.dy  ?? null,
+    eps: epsTTM > 0 ? +epsTTM.toFixed(2) : null,
+    gm:  gmLast              ?? yahooMeta?.gm  ?? null,
+    roe: yahooMeta?.roe      ?? null,
+    fiftyTwoWeekHigh: yahooMeta?.fiftyTwoWeekHigh ?? null,
+    fiftyTwoWeekLow:  yahooMeta?.fiftyTwoWeekLow  ?? null,
+  };
+  renderFinKPI(kpi);
+}
+
 function renderFinKPI(meta){
   const set = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val ?? '—'; };
   set('fk-pe',  meta?.pe  != null ? meta.pe.toFixed(1)  : '—');
