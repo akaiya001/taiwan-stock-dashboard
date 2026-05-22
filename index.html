@@ -205,6 +205,29 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 [data-theme="light"] .fin-chart-card,[data-theme="light"] .fin-table-card,
 [data-theme="light"] .fin-kpi,[data-theme="light"] .fin-header{background:var(--bg1);border-color:var(--bd2);}
 [data-theme="light"] .fin-chart-title,[data-theme="light"] .fin-header-title{color:var(--tx1);}
+/* 籌碼/行事曆卡片 */
+.pledge-bar-wrap{margin:6px 0 2px}
+.pledge-bar-bg{height:7px;background:var(--bg3);border-radius:4px;overflow:hidden;margin:3px 0 1px}
+.pledge-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.pledge-label{display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);font-family:var(--mono)}
+.pledge-warn{font-size:11px;padding:4px 8px;border-radius:4px;margin-top:6px;font-weight:600}
+.pledge-warn.hi{background:var(--upbg);color:var(--up)}
+.pledge-warn.ok{background:var(--dnbg);color:var(--dn)}
+.pledge-warn.mid{background:rgba(245,158,11,.12);color:var(--amber)}
+.hold-tier{display:flex;align-items:center;gap:6px;margin:3px 0;font-size:11px}
+.hold-tier-name{width:80px;color:var(--tx3);flex-shrink:0;font-size:10px}
+.hold-tier-bar{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.hold-tier-fill{height:100%;border-radius:3px;background:var(--cyan);transition:width .4s}
+.hold-tier-val{width:40px;text-align:right;color:var(--tx2);font-family:var(--mono);font-size:10px}
+.cal-item{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--bg3)}
+.cal-item:last-child{border-bottom:none}
+.cal-date{font-family:var(--mono);font-size:10px;color:var(--tx3);width:54px;flex-shrink:0;padding-top:1px}
+.cal-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.cal-text{font-size:11px;color:var(--tx2);line-height:1.5}
+.cal-tag{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;margin-left:4px}
+.cal-tag.div{background:var(--dnbg);color:var(--dn)}
+.cal-tag.note{background:rgba(74,144,226,.12);color:var(--blue)}
+.cal-tag.warn{background:var(--upbg);color:var(--up)}
 .zoom-btn{background:var(--bg2);border:1px solid var(--bd1);border-radius:3px;
   color:var(--tx3);font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;
   transition:background .15s,color .15s;font-family:var(--mono);}
@@ -738,6 +761,30 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
   <div class="ap-card ap-card-full">
     <div class="rp-title">整體結論摘要</div>
     <div class="conclusion-box" id="ap-conclusion">—</div>
+  </div>
+
+  <!-- 董監質押 -->
+  <div class="ap-card" id="card-pledge" style="display:none">
+    <div class="rp-title">董監質押</div>
+    <div id="pledge-body">
+      <div class="fin-loading" style="height:60px"><div class="fin-spinner"></div>載入中…</div>
+    </div>
+  </div>
+
+  <!-- 大股東持股分級 -->
+  <div class="ap-card" id="card-holding" style="display:none">
+    <div class="rp-title">集保持股分級</div>
+    <div id="holding-body">
+      <div class="fin-loading" style="height:60px"><div class="fin-spinner"></div>載入中…</div>
+    </div>
+  </div>
+
+  <!-- 重大行事曆 -->
+  <div class="ap-card bcard-wide" id="card-calendar" style="display:none">
+    <div class="rp-title">重大行事曆</div>
+    <div id="calendar-body">
+      <div class="fin-loading" style="height:60px"><div class="fin-spinner"></div>載入中…</div>
+    </div>
   </div>
 
 </div><!-- /analysis-section -->
@@ -1401,6 +1448,8 @@ async function renderFinancials(sym, yahooMeta){
     if(divRaw.status   ==='rejected') console.warn('[FinMind] div err:',    divRaw.reason);
     // KPI 從 FinMind 資料計算（覆蓋 Yahoo meta 的空值）
     renderFinKPIFromData(income, div, yahooMeta);
+    // 籌碼分析（質押、持股、行事曆）
+    renderChipsExtra(sym, yahooMeta).catch(e=>console.warn('chips:', e));
 
     // 渲染季報（第一批）
     renderQuarterly(sym, income);
@@ -1765,6 +1814,219 @@ function renderAnnual(sym, rows, divRows){
     .forEach(id => FIN_CHARTS[id]?.resize()), 100);
 }
 
+
+// ══════════════════════════════════════════
+// 籌碼分析：董監質押 + 大股東持股 + 重大行事曆
+// ══════════════════════════════════════════
+async function renderChipsExtra(sym, yahooMeta){
+  const token = getWorkerUrl();
+  if(!token) return;
+
+  const start3m = new Date(); start3m.setMonth(start3m.getMonth()-6);
+  const start1y = new Date(); start1y.setFullYear(start1y.getFullYear()-1);
+  const fmt = d => d.toISOString().slice(0,10);
+
+  // 顯示卡片（載入中狀態已在 HTML 設定）
+  ['card-pledge','card-holding','card-calendar'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='';
+  });
+
+  // 並行 fetch
+  const [pledgeR, holdingR, noteR, divDateR] = await Promise.allSettled([
+    fmFetch('TaiwanStockPledge',          sym, fmt(start1y)),
+    fmFetch('TaiwanStockHoldingSharesPer',sym, fmt(start3m)),
+    fmFetch('TaiwanStockImportantNote',   sym, fmt(start3m)),
+    fmFetch('TaiwanStockExDividendDate',  sym, fmt(start1y)),
+  ]);
+
+  // ── 董監質押 ──
+  if(pledgeR.status==='fulfilled' && pledgeR.value.length){
+    renderPledge(pledgeR.value, yahooMeta);
+  } else {
+    setHTML('pledge-body','<div style="font-size:11px;color:var(--tx4)">無質押資料</div>');
+  }
+
+  // ── 集保持股分級 ──
+  if(holdingR.status==='fulfilled' && holdingR.value.length){
+    renderHolding(holdingR.value);
+  } else {
+    setHTML('holding-body','<div style="font-size:11px;color:var(--tx4)">無持股分級資料</div>');
+  }
+
+  // ── 重大行事曆 ──
+  const notes   = noteR.status==='fulfilled'   ? noteR.value   : [];
+  const divDates= divDateR.status==='fulfilled' ? divDateR.value : [];
+  renderCalendar(notes, divDates, yahooMeta);
+}
+
+// ── 董監質押渲染 ──
+function renderPledge(rows, meta){
+  // 取最新一筆（按日期排序）
+  const sorted = [...rows].sort((a,b)=>a.date.localeCompare(b.date));
+  const latest = sorted[sorted.length-1];
+  if(!latest){ setHTML('pledge-body','<div style="font-size:11px;color:var(--tx4)">無資料</div>'); return; }
+
+  const pledgeRatio = parseFloat(latest.pledge_ratio||latest.PledgeRatio||0);
+  const pledgeShares= parseFloat(latest.pledge_shares||latest.PledgeShares||0);
+  const totalShares = parseFloat(latest.total_shares||latest.TotalShares||1);
+
+  // 趨勢（近6筆對比）
+  const recent6 = sorted.slice(-6);
+  const trendUp = recent6.length>=2 &&
+    parseFloat(recent6[recent6.length-1].pledge_ratio||0) >
+    parseFloat(recent6[0].pledge_ratio||0);
+
+  // 警示等級
+  let warnClass='ok', warnText='質押比例正常';
+  if(pledgeRatio >= 50){ warnClass='hi'; warnText='⚠ 質押比例偏高（≥50%），留意風險'; }
+  else if(pledgeRatio >= 25){ warnClass='mid'; warnText='▲ 質押比例中等（≥25%），需觀察'; }
+
+  // 近6期趨勢
+  const trendHtml = recent6.map(r=>{
+    const v = parseFloat(r.pledge_ratio||0);
+    const h = Math.max(2, Math.round(v/100*40));
+    const c = v>=50?'var(--up)':v>=25?'var(--amber)':'var(--dn)';
+    return `<div title="${r.date}: ${v.toFixed(1)}%"
+      style="width:10px;height:${h}px;background:${c};border-radius:2px;align-self:flex-end"></div>`;
+  }).join('');
+
+  const html = `
+    <div style="display:flex;align-items:flex-end;gap:4px;margin-bottom:8px;height:44px">${trendHtml}</div>
+    <div class="pledge-bar-wrap">
+      <div class="pledge-label"><span>質押比例</span><span style="color:${pledgeRatio>=50?'var(--up)':pledgeRatio>=25?'var(--amber)':'var(--dn)'}">${pledgeRatio.toFixed(1)}%</span></div>
+      <div class="pledge-bar-bg">
+        <div class="pledge-bar-fill" style="width:${Math.min(pledgeRatio,100)}%;background:${pledgeRatio>=50?'var(--up)':pledgeRatio>=25?'var(--amber)':'var(--dn)'}"></div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--tx4);margin-bottom:6px">
+      最新：${latest.date} ${trendUp?'↑ 趨勢上升':'↓ 趨勢持平/下降'}
+    </div>
+    <div class="pledge-warn ${warnClass}">${warnText}</div>`;
+  setHTML('pledge-body', html);
+}
+
+// ── 集保持股分級渲染 ──
+function renderHolding(rows){
+  // 取最新日期的資料
+  const dates = [...new Set(rows.map(r=>r.date))].sort();
+  const lastDate = dates[dates.length-1];
+  const latest = rows.filter(r=>r.date===lastDate);
+  if(!latest.length){ setHTML('holding-body','<div style="font-size:11px;color:var(--tx4)">無資料</div>'); return; }
+
+  // 分級：大股東（>1000張）、中戶（200-1000張）、散戶（<200張）
+  // FinMind HoldingSharesPer 欄位：level, people_count, shares, percent
+  const levelMap = {
+    '1-999':      {label:'散戶 1-999股',     color:'var(--tx4)'},
+    '1,000-5,000':{label:'小戶 1-5千股',     color:'var(--tx3)'},
+    '5,001-10,000':{label:'中戶 5-1萬股',    color:'var(--cyan)'},
+    '10,001-50,000':{label:'中大戶 1-5萬股', color:'var(--blue)'},
+    '50,001-100,000':{label:'大戶 5-10萬股', color:'var(--amber)'},
+    '100,001-200,000':{label:'大戶 10-20萬', color:'var(--purple)'},
+    '200,001-400,000':{label:'主力 20-40萬', color:'var(--up)'},
+    '400,001以上':{label:'超級主力 40萬+',   color:'var(--up)'},
+  };
+
+  // 合併分級為 大/中/小/散四組
+  let groups = { whale:0, big:0, mid:0, retail:0 };
+  for(const r of latest){
+    const pct = parseFloat(r.percent||r.Percent||0);
+    const lv  = r.HoldingSharesLevel || r.level || '';
+    if(lv.includes('400,001') || lv.includes('200,001')) groups.whale += pct;
+    else if(lv.includes('50,001') || lv.includes('100,001') || lv.includes('10,001')) groups.big += pct;
+    else if(lv.includes('5,001') || lv.includes('1,000')) groups.mid += pct;
+    else groups.retail += pct;
+  }
+
+  const tiers = [
+    {name:'超大戶（主力）', val:groups.whale, color:'var(--up)'},
+    {name:'大戶',           val:groups.big,   color:'var(--amber)'},
+    {name:'中戶',           val:groups.mid,   color:'var(--cyan)'},
+    {name:'散戶',           val:groups.retail,color:'var(--tx3)'},
+  ];
+
+  // 籌碼集中度：(whale+big) %
+  const concentrate = groups.whale + groups.big;
+  const concStr = concentrate > 0 ? concentrate.toFixed(1)+'%' : '—';
+  const concClr = concentrate>=60?'var(--dn)':concentrate>=40?'var(--amber)':'var(--tx3)';
+
+  const tiersHtml = tiers.map(t=>
+    `<div class="hold-tier">
+      <div class="hold-tier-name">${t.name}</div>
+      <div class="hold-tier-bar"><div class="hold-tier-fill" style="width:${Math.min(t.val,100).toFixed(1)}%;background:${t.color}"></div></div>
+      <div class="hold-tier-val">${t.val.toFixed(1)}%</div>
+    </div>`
+  ).join('');
+
+  setHTML('holding-body',
+    `<div style="font-size:10px;color:var(--tx4);margin-bottom:6px">${lastDate} 集保資料</div>
+    ${tiersHtml}
+    <div style="margin-top:8px;font-size:11px">
+      籌碼集中度（大戶以上）：<span style="font-weight:700;color:${concClr}">${concStr}</span>
+    </div>`
+  );
+}
+
+// ── 重大行事曆渲染 ──
+function renderCalendar(notes, divDates, meta){
+  const events = [];
+  const now = new Date();
+  const yr6ago = new Date(); yr6ago.setMonth(yr6ago.getMonth()-3);
+
+  // 重大訊息
+  for(const n of notes){
+    const d = new Date(n.date);
+    if(isNaN(d)) continue;
+    events.push({
+      date: n.date?.slice(0,10),
+      text: n.note || n.subject || n.Note || '重大訊息',
+      type: 'note',
+    });
+  }
+
+  // 除權息日
+  for(const d of divDates){
+    const exDate = d.ExRightTradingDate || d.ExDividendTradingDate || d.date;
+    if(!exDate) continue;
+    const cashDiv  = parseFloat(d.CashDividend||d.cash_dividend||0);
+    const stockDiv = parseFloat(d.StockDividend||d.stock_dividend||0);
+    const label = [
+      cashDiv  >0 ? `現金${cashDiv}元`  : '',
+      stockDiv >0 ? `股票${stockDiv}元` : '',
+    ].filter(Boolean).join('／') || '除息';
+    events.push({
+      date: exDate.slice(0,10),
+      text: `除權息：${label}`,
+      type: 'div',
+    });
+  }
+
+  // 排序（近期在前）+ 限制顯示筆數
+  events.sort((a,b)=>b.date.localeCompare(a.date));
+  const display = events.slice(0,12);
+
+  if(!display.length){
+    setHTML('calendar-body','<div style="font-size:11px;color:var(--tx4)">近期無重大事件</div>');
+    return;
+  }
+
+  const dotColor = {div:'var(--dn)', note:'var(--blue)', warn:'var(--up)'};
+  const today = new Date().toISOString().slice(0,10);
+
+  const html = display.map(e=>{
+    const isPast = e.date < today;
+    const dc = dotColor[e.type]||'var(--tx3)';
+    const shortText = e.text.length>40 ? e.text.slice(0,40)+'…' : e.text;
+    return `<div class="cal-item" style="${isPast?'opacity:.55':''}">
+      <div class="cal-date">${e.date}</div>
+      <div class="cal-dot" style="background:${dc}"></div>
+      <div class="cal-text">${shortText}<span class="cal-tag ${e.type}">${e.type==='div'?'除息':'訊息'}</span></div>
+    </div>`;
+  }).join('');
+
+  setHTML('calendar-body', html);
+}
+
+
 // Window resize
 window.addEventListener('resize',()=>{
   Object.values(CHARTS).forEach(c=>c?.resize());
@@ -2025,8 +2287,16 @@ function recomputeAndRender(){
   });
   renderAllCharts(candles, meta);
   // 財報（有 token 才執行）
-  if(getFinToken()) renderFinancials(meta.symbol, meta).catch(e=>console.warn('fin:',e));
-  else { const s=document.getElementById('fin-section'); if(s) s.style.display='none'; }
+  if(getFinToken()){
+    // 重設三張籌碼卡片為載入中狀態
+    ['card-pledge','card-holding','card-calendar'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.style.display='none';
+    });
+    setHTML('pledge-body',  '<div class="fin-loading" style="height:60px"><div class="fin-spinner"></div>載入中…</div>');
+    setHTML('holding-body', '<div class="fin-loading" style="height:60px"><div class="fin-spinner"></div>載入中…</div>');
+    setHTML('calendar-body','<div class="fin-loading" style="height:60px"><div class="fin-spinner"></div>載入中…</div>');
+    renderFinancials(meta.symbol, meta).catch(e=>console.warn('fin:',e));
+  } else { const s=document.getElementById('fin-section'); if(s) s.style.display='none'; }
   // mini chart resize after DOM settles
   setTimeout(()=>{
     ['miniKd','miniMacd','miniVol2'].forEach(k=>CHARTS[k]?.resize());
