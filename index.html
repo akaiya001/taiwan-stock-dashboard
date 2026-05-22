@@ -74,6 +74,33 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
   transition:border-color .15s;
 }
 .topbar-input:focus{border-color:var(--cyan);}
+
+/* ── Stock Autocomplete Dropdown ── */
+.stock-search-wrap{position:relative;display:flex;align-items:center;gap:6px;}
+#stock-suggest{
+  display:none; position:absolute; top:calc(100% + 4px); left:0;
+  min-width:220px; max-height:260px; overflow-y:auto;
+  background:var(--bg1); border:1px solid var(--bd2); border-radius:6px;
+  box-shadow:0 8px 24px rgba(0,0,0,.45); z-index:500; list-style:none;
+  padding:4px 0;
+}
+#stock-suggest.open{display:block;}
+#stock-suggest li{
+  display:flex; align-items:center; gap:8px;
+  padding:7px 12px; cursor:pointer; transition:background .1s;
+}
+#stock-suggest li:hover,#stock-suggest li.active{background:var(--bg3);}
+#stock-suggest li .sg-code{
+  font-family:var(--mono); font-size:12px; font-weight:700;
+  color:var(--cyan); min-width:36px;
+}
+#stock-suggest li .sg-name{font-size:13px; color:var(--tx1); flex:1;}
+#stock-suggest li .sg-ind{
+  font-size:10px; color:var(--tx3); white-space:nowrap;
+  background:var(--bg4); border-radius:3px; padding:1px 5px;
+}
+#stock-suggest li .sg-match{color:var(--amber);}
+
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
 .status-badge{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:3px;border:1px solid;}
 .status-badge.live   {background:#0a2015;color:var(--dn);border-color:var(--dn2);}
@@ -400,10 +427,13 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
     <span id="topbar-scode"></span>
     <span id="topbar-schg"></span>
   </div>
-  <div class="topbar-search">
+  <div class="topbar-search stock-search-wrap">
     <input class="topbar-input" id="stock-input" type="text"
-      value="2330" maxlength="8" placeholder="股票代號"
-      onkeydown="if(event.key==='Enter')queryStock()">
+      value="2330" maxlength="12" placeholder="代號 / 股名"
+      autocomplete="off"
+      oninput="onStockInput(event)"
+      onkeydown="onStockKeydown(event)">
+    <ul id="stock-suggest"></ul>
     <button class="btn btn-primary" onclick="queryStock()">查詢</button>
   </div>
   <div class="topbar-ohlcv" id="topbar-ohlcv">
@@ -1077,6 +1107,129 @@ const STOCK_DB = {
   '0056':{ name:'元大高股息',industry:'ETF',        company:'精選高殖利率成分股，每年配息穩定。',                                     industry_desc:'高息策略在升息尾段受惠，適合存股族。' },
   '6505':{ name:'台塑化',   industry:'石化',        company:'台灣最大石化廠，油品與化工原料多元布局。',                               industry_desc:'油價回升帶動煉油利潤，化工需求逐步復甦。' },
 };
+
+// ══════════════════════════════════════════
+// 股名 / 代號模糊搜尋（Autocomplete）
+// ══════════════════════════════════════════
+
+/** 建立 name→code 反向索引（含拼音/注音首字拆解略，直接用字串包含） */
+function buildSuggestList(query){
+  const q = query.trim();
+  if(!q) return [];
+  const isCode = /^\d/.test(q); // 數字開頭 → 代號模式
+  const results = [];
+
+  for(const [code, info] of Object.entries(STOCK_DB)){
+    let score = 0;
+    let matchField = '';
+
+    if(isCode){
+      if(code.startsWith(q)){
+        score = q.length === code.length ? 100 : 80 - (code.length - q.length);
+        matchField = 'code';
+      }
+    } else {
+      // 名稱完全符合
+      if(info.name === q){ score = 100; matchField = 'name'; }
+      // 名稱開頭
+      else if(info.name.startsWith(q)){ score = 85; matchField = 'name'; }
+      // 名稱包含
+      else if(info.name.includes(q)){ score = 60; matchField = 'name'; }
+      // 產業包含
+      else if(info.industry && info.industry.includes(q)){ score = 30; matchField = 'industry'; }
+    }
+
+    if(score > 0) results.push({ code, info, score, matchField, query: q });
+  }
+
+  return results.sort((a,b) => b.score - a.score).slice(0, 8);
+}
+
+/** highlight 命中子字串 */
+function hlText(str, q){
+  if(!q) return str;
+  const idx = str.indexOf(q);
+  if(idx < 0) return str;
+  return str.slice(0, idx)
+    + `<span class="sg-match">${str.slice(idx, idx+q.length)}</span>`
+    + str.slice(idx + q.length);
+}
+
+let _sgActive = -1; // keyboard nav index
+
+function renderSuggest(items){
+  const ul = document.getElementById('stock-suggest');
+  _sgActive = -1;
+  if(!items.length){ ul.className=''; ul.innerHTML=''; return; }
+
+  ul.innerHTML = items.map((it, i) => {
+    const codeHl = it.matchField === 'code'
+      ? hlText(it.code, it.query) : it.code;
+    const nameHl = it.matchField === 'name'
+      ? hlText(it.info.name, it.query) : it.info.name;
+    return `<li data-code="${it.code}" onclick="selectSuggest('${it.code}')">
+      <span class="sg-code">${codeHl}</span>
+      <span class="sg-name">${nameHl}</span>
+      <span class="sg-ind">${it.info.industry||''}</span>
+    </li>`;
+  }).join('');
+  ul.className = 'open';
+}
+
+function closeSuggest(){
+  const ul = document.getElementById('stock-suggest');
+  ul.className = '';
+  _sgActive = -1;
+}
+
+function selectSuggest(code){
+  document.getElementById('stock-input').value = code;
+  closeSuggest();
+  queryStock();
+}
+
+function onStockInput(e){
+  const q = e.target.value.trim();
+  if(q.length === 0){ closeSuggest(); return; }
+  const items = buildSuggestList(q);
+  renderSuggest(items);
+}
+
+function onStockKeydown(e){
+  const ul = document.getElementById('stock-suggest');
+  const items = ul.querySelectorAll('li');
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    _sgActive = Math.min(_sgActive + 1, items.length - 1);
+    items.forEach((el,i) => el.classList.toggle('active', i===_sgActive));
+    return;
+  }
+  if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    _sgActive = Math.max(_sgActive - 1, -1);
+    items.forEach((el,i) => el.classList.toggle('active', i===_sgActive));
+    return;
+  }
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    if(_sgActive >= 0 && items[_sgActive]){
+      const code = items[_sgActive].dataset.code;
+      selectSuggest(code);
+    } else {
+      closeSuggest();
+      queryStock();
+    }
+    return;
+  }
+  if(e.key === 'Escape'){
+    closeSuggest();
+  }
+}
+
+// 點外部關閉
+document.addEventListener('click', e => {
+  if(!e.target.closest('.stock-search-wrap')) closeSuggest();
+});
 
 // ══════════════════════════════════════════
 // Yahoo Finance CORS Proxy 爬蟲
@@ -2038,7 +2191,24 @@ window.addEventListener('resize',()=>{
 // 查詢入口
 // ══════════════════════════════════════════
 async function queryStock(){
-  const sym=$('stock-input').value.trim().toUpperCase();
+  closeSuggest();
+  let raw = $('stock-input').value.trim();
+  if(!raw){ showError('請輸入股票代號或股名（例：2330 或 台積電）'); return; }
+
+  // ── 股名 → 代號 反查 ──
+  // 若輸入非數字開頭，嘗試在 STOCK_DB 中查名稱
+  if(!/^\d/.test(raw)){
+    const matched = Object.entries(STOCK_DB).find(([,v]) => v.name === raw)
+      || Object.entries(STOCK_DB).find(([,v]) => v.name.includes(raw));
+    if(matched){
+      raw = matched[0]; // 取代號
+      $('stock-input').value = raw; // 回填 input
+    } else {
+      showError(`找不到「${raw}」，請確認股名或直接輸入代號`); return;
+    }
+  }
+
+  const sym = raw.toUpperCase();
   if(!sym){ showError('請輸入股票代號（例：2330）'); return; }
   hideError(); setStatus('loading');
 
