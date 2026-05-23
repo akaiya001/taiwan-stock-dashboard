@@ -2329,32 +2329,19 @@ async function queryStock(){
   if(!raw){ showError('請輸入股票代號或股名（例：2330 或 台積電）'); return; }
 
   // ── 股名 → 代號 反查 ──
-  // 非數字開頭 且 非^開頭 → 才當作股名
+  // 非數字開頭 且 非^開頭 → 才當作股名，直接用 Yahoo Search 取第一筆代號
   if(!/^\d/.test(raw) && !raw.startsWith('^')){
-    // 1. 先查本地（FULL_STOCK_MAP 含先前搜尋過的結果）
-    let matched =
-      Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name === raw) ||
-      Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.startsWith(raw)) ||
-      Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.includes(raw));
-
-    if(!matched){
-      // 2. 遠端搜尋（Yahoo Finance Search API）
-      hideError(); setStatus('loading');
-      try{
-        const quotes = await searchYahooFinance(raw);
-        parseYahooQuotes(quotes, raw); // 回寫 FULL_STOCK_MAP
-        matched =
-          Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name === raw) ||
-          Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.startsWith(raw)) ||
-          Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.includes(raw));
-      } catch(_){}
-    }
-
-    if(matched){
-      raw = matched[0];
+    hideError(); setStatus('loading');
+    try{
+      const quotes = await searchYahooFinance(raw);
+      if(!quotes.length){
+        showError(`找不到「${raw}」，請輸入股票代號（例：2330）`); setStatus('error'); return;
+      }
+      // 直接取第一筆的代號（去掉 .TW/.TWO 後綴）
+      raw = quotes[0].symbol.replace(/\.(TW|TWO)$/, '');
       $('stock-input').value = raw;
-    } else {
-      showError(`找不到「${raw}」，請輸入股票代號（例：2330）`); setStatus('error'); return;
+    } catch(e){
+      showError(`搜尋失敗，請直接輸入代號（例：2330）`); setStatus('error'); return;
     }
   }
 
