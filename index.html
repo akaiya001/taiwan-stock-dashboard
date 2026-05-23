@@ -663,6 +663,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
       </div>
       <div class="bcard-row"><span class="bcard-lbl">價格5日</span><span class="bcard-val" id="bc-div-price">—</span></div>
       <div class="bcard-row"><span class="bcard-lbl">量能趨勢</span><span class="bcard-val" id="bc-div-vol">—</span></div>
+      <div class="bcard-row"><span class="bcard-lbl">量縮觀察</span><span class="bcard-val" id="bc-shrink-obs">—</span></div>
     </div>
   </div>
 
@@ -3037,6 +3038,115 @@ function renderAllCharts(candles, meta){
     }
   }
 
+  // ── 下跌旗形偵測（旗杆+收斂下行通道）──
+  let bearFlagFound=false, bearFlagScore=0, bearFlagDesc='';
+  {
+    if(n>=15){
+      const seg=candles.slice(-15);
+      const segC=seg.map(c=>c.close);
+      // 旗杆：前5根中有急跌（跌幅>3%）
+      const pole=segC.slice(0,5);
+      const poleDrop=(pole[0]-pole[4])/pole[0];
+      if(poleDrop>0.03){
+        // 旗面：後10根高點低點各自線性遞減
+        const flagSeg=seg.slice(5);
+        const fHighs=flagSeg.map(c=>c.high);
+        const fLows=flagSeg.map(c=>c.low);
+        const highSlope=(fHighs[fHighs.length-1]-fHighs[0])/(fHighs.length-1);
+        const lowSlope=(fLows[fLows.length-1]-fLows[0])/(fLows.length-1);
+        if(highSlope<0 && lowSlope<0 && Math.abs(highSlope-lowSlope)/Math.max(Math.abs(highSlope),1)<1.5){
+          bearFlagFound=true; bearFlagScore=80;
+          bearFlagDesc=`下跌旗形（信號強度80%）：急跌${(poleDrop*100).toFixed(1)}%後盤整，趨快賣出。`;
+        }
+      }
+    }
+  }
+
+  // ── 上升旗形偵測（旗杆+收斂上行通道）──
+  let bullFlagFound=false, bullFlagScore=0, bullFlagDesc='';
+  {
+    if(n>=15){
+      const seg=candles.slice(-15);
+      const segC=seg.map(c=>c.close);
+      const pole=segC.slice(0,5);
+      const poleRise=(pole[4]-pole[0])/pole[0];
+      if(poleRise>0.03){
+        const flagSeg=seg.slice(5);
+        const fHighs=flagSeg.map(c=>c.high);
+        const fLows=flagSeg.map(c=>c.low);
+        const highSlope=(fHighs[fHighs.length-1]-fHighs[0])/(fHighs.length-1);
+        const lowSlope=(fLows[fLows.length-1]-fLows[0])/(fLows.length-1);
+        if(highSlope>0 && lowSlope>0 && Math.abs(highSlope-lowSlope)/Math.max(Math.abs(lowSlope),1)<1.5){
+          bullFlagFound=true; bullFlagScore=80;
+          bullFlagDesc=`上升旗形（信號強度80%）：急漲${(poleRise*100).toFixed(1)}%後整理，趨緊買入。`;
+        }
+      }
+    }
+  }
+
+  // ── 上升楔形偵測（高低點均收斂上升）──
+  let bullWedgeFound=false, bullWedgeScore=0, bullWedgeDesc='';
+  {
+    if(n>=12){
+      const seg=candles.slice(-12);
+      const fHighs=seg.map(c=>c.high);
+      const fLows=seg.map(c=>c.low);
+      const hSlope=(fHighs[fHighs.length-1]-fHighs[0])/fHighs.length;
+      const lSlope=(fLows[fLows.length-1]-fLows[0])/fLows.length;
+      const avgH=fHighs.reduce((a,b)=>a+b,0)/fHighs.length;
+      // 高低點都往上但收斂（低點斜率>高點斜率，間距縮小）
+      if(hSlope>0 && lSlope>0 && lSlope>hSlope && (fHighs[0]-fLows[0])>(fHighs[fHighs.length-1]-fLows[fLows.length-1])){
+        bullWedgeFound=true; bullWedgeScore=100;
+        bullWedgeDesc=`上升楔形（信號強度100%）：高低點收斂上升，迎接暴漲訊號，趨緊買入。`;
+      }
+    }
+  }
+
+  // ── 箱型盤整偵測（高低點均值差小）──
+  let boxFound=false, boxDesc='';
+  {
+    if(n>=10){
+      const seg=candles.slice(-10);
+      const highs=seg.map(c=>c.high), lows=seg.map(c=>c.low);
+      const boxH=Math.max(...highs), boxL=Math.min(...lows);
+      const boxRange=(boxH-boxL)/boxL;
+      if(boxRange<0.04){
+        boxFound=true;
+        boxDesc=`箱型盤整（信號強度50%）：近10根K線振幅${(boxRange*100).toFixed(1)}%，危險別碰，等待方向確認。`;
+      }
+    }
+  }
+
+  // ── 型態評分整合 ──
+  // 依據圖示：賣出→M頭100/下跌旗80/菱形頂65  買入→W底65/上升旗80/上升楔100
+  let patternSignal=0, patternLabel='無特殊型態', patternCls='dim', patternDesc='';
+  let patternBadge=''; // 用於訊號卡
+  if(mFound && mAnnotation?.broke){
+    patternSignal=-100; patternLabel='M頭(100%)'; patternCls='dn';
+    patternDesc=mDesc; patternBadge={label:'M頭跌破 100%', cls:'dn', icon:'M'};
+  } else if(bearFlagFound){
+    patternSignal=-80; patternLabel='下跌旗(80%)'; patternCls='dn';
+    patternDesc=bearFlagDesc; patternBadge={label:'下跌旗形 80%', cls:'dn', icon:'⚑'};
+  } else if(mFound && !mAnnotation?.broke){
+    patternSignal=-65; patternLabel='M頭觀察(65%)'; patternCls='dn';
+    patternDesc=mDesc; patternBadge={label:'M頭形成中 65%', cls:'dn', icon:'M'};
+  } else if(bullWedgeFound){
+    patternSignal=100; patternLabel='上升楔(100%)'; patternCls='up';
+    patternDesc=bullWedgeDesc; patternBadge={label:'上升楔形 100%', cls:'up', icon:'▲'};
+  } else if(bullFlagFound){
+    patternSignal=80; patternLabel='上升旗(80%)'; patternCls='up';
+    patternDesc=bullFlagDesc; patternBadge={label:'上升旗形 80%', cls:'up', icon:'⚑'};
+  } else if(wFound && wAnnotation?.broke){
+    patternSignal=65; patternLabel='W底突破(65%)'; patternCls='up';
+    patternDesc=wDesc; patternBadge={label:'W底突破 65%', cls:'up', icon:'W'};
+  } else if(wFound && !wAnnotation?.broke){
+    patternSignal=50; patternLabel='W底形成(50%)'; patternCls='up';
+    patternDesc=wDesc; patternBadge={label:'W底形成中 50%', cls:'up', icon:'W'};
+  } else if(boxFound){
+    patternSignal=0; patternLabel='箱型盤整(50%)'; patternCls='amber';
+    patternDesc=boxDesc; patternBadge={label:'箱型盤整 50%', cls:'amber', icon:'□'};
+  }
+
   // ══════════════════════════════════════════
   // 主圖：重新 setOption（含型態疊加）
   // ══════════════════════════════════════════
@@ -3380,9 +3490,8 @@ function renderAllCharts(candles, meta){
   const volLabel=volRatio>1.5?'爆量': volRatio>1.2?'量增': volRatio<0.7?'明顯量縮': '量能正常';
   const volCls  =volRatio>1.5?'amber': volRatio>1.2?'up': volRatio<0.7?'dn':'';
 
-  // 型態標籤
-  const patLabel=wFound?'W底型態': mFound?'M頭型態':'無特殊型態';
-  const patCls  =wFound?'up': mFound?'dn':'dim';
+  // 型態標籤（由後面 patternSignal 區塊覆蓋，此處先給預設值）
+  let patLabel='無特殊型態', patCls='dim';
 
   // ── 右側欄渲染 ──
   const setScoreVal=(id,txt,cls)=>{
@@ -3395,7 +3504,7 @@ function renderAllCharts(candles, meta){
   setScoreVal('ap-macd',    macdLabel,  macdCls);
   setScoreVal('ap-rsi',     rsiLabel,   rsiCls);
   setScoreVal('ap-vol',     volLabel,   volCls);
-  setScoreVal('ap-pattern', patLabel,   patCls);
+  setScoreVal('ap-pattern', patternLabel||patLabel, patternCls||patCls);
 
   setHTML('ap-stars', starsHTML(starScore));
   const olEl=$('ap-overall');
@@ -3414,7 +3523,8 @@ function renderAllCharts(candles, meta){
       { name:'MACD',    val: difL>0&&hL>0?8:difL<0&&hL<0?2:5, cls:difL>0&&hL>0?'up':difL<0&&hL<0?'dn':'amber' },
       { name:'RSI',     val: rsiLast!=null?(rsiLast>70?4:rsiLast<30?6:rsiLast>50?7:4):5, cls:rsiLast!=null?(rsiLast>70?'amber':rsiLast<30?'cyan':rsiLast>50?'up':'dn'):'' },
       { name:'量能',    val: volRatio>1.5?8:volRatio>1.1?7:volRatio<0.7?3:5, cls:volRatio>1.1?'up':volRatio<0.7?'dn':'' },
-      { name:'型態',    val: wFound&&wAnnotation?.broke?8:mFound&&mAnnotation?.broke?2:5, cls:wFound?'up':mFound?'dn':'' },
+      { name:'型態',    val: patternSignal>0?Math.round(5+patternSignal/33):patternSignal<0?Math.round(5+patternSignal/33):5,
+                    cls: patternSignal>0?'up':patternSignal<0?'dn':'' },
     ];
     const colors={'up':'#1db85a','dn':'#e84545','amber':'#f59e0b','cyan':'#22d3ee','':' #4a5c7a'};
     setHTML('ap-score-bars', dims.map(d=>{
@@ -3441,8 +3551,9 @@ function renderAllCharts(candles, meta){
 
   // 整體結論
   const concl=`技術面評分 ${score.toFixed(1)}/10（${trendLabel}）。均線${maLabel}，KD ${kdLabel}，MACD ${macdLabel}，RSI ${rsiLast!=null?rsiLast.toFixed(1):'—'}（${rsiLabel}），量能${volLabel}。`
-    + (wFound?` 偵測到W底型態，${wDesc}`:'')
-    + (mFound?` 偵測到M頭型態，${mDesc}`:'')
+    + (patternDesc?` ▶ ${patternDesc}`:'')
+    + (divergeType==='shrink_stable'?' ▶ 量縮穩定觀察期，無賣壓，等待放量突破。':'')
+    + (divergeType==='shrink_weak'?' ▶ 量縮偏弱，買盤消失但仍有賣壓，宜觀望。':'')
     + `\n\n${advice.replace(/<[^>]+>/g,'')}`;
   setText('ap-conclusion', concl);
 
@@ -3664,8 +3775,7 @@ function renderAllCharts(candles, meta){
     if(maCross)   signals.push({date:maCrossDate,   label:maCross,   cls:maCross.includes('黃金')?'up':'dn', icon:maCross.includes('黃金')?'↑':'↓'});
     if(kdCross)   signals.push({date:kdCrossDate,   label:kdCross,   cls:kdCross.includes('黃金')?'up':'dn', icon:kdCross.includes('黃金')?'↗':'↘'});
     if(macdCross) signals.push({date:macdCrossDate, label:macdCross, cls:macdCross==='柱轉紅'?'up':'dn',      icon:macdCross==='柱轉紅'?'▲':'▼'});
-    if(wFound&&wAnnotation?.broke) signals.push({date:wPos, label:'W底突破', cls:'up', icon:'W'});
-    if(mFound&&mAnnotation?.broke) signals.push({date:mPos, label:'M頭跌破', cls:'dn', icon:'M'});
+    if(patternBadge) signals.push({date:patternBadge.cls==='up'?wPos:mPos||'', label:patternBadge.label, cls:patternBadge.cls, icon:patternBadge.icon});
     if(volRatio>1.5) signals.push({date:candles[n]?.time?.slice(5)||'', label:'爆量', cls:'amber', icon:'!'});
     if(!signals.length) signals.push({date:'—', label:'近期無明顯訊號', cls:'dim', icon:'·'});
     setHTML('bc-signals-body', signals.slice(0,5).map(s=>`
@@ -3731,18 +3841,38 @@ function renderAllCharts(candles, meta){
     const vol10avg   = vols.slice(-10,-5).reduce((a,b)=>a+b,0)/5;
     const volTrend   = vol5avg - vol10avg;
 
-    let divergeType='none', divergeMsg='未出現背離', divergeCls='neut', divergeIcon='📊';
-    if(priceDelta > 0 && volTrend < -vol10avg*0.1){
-      divergeType='bull_div'; divergeMsg='價漲量縮，多頭動能衰竭';
+    // ── 量縮細分判斷（圖1邏輯）──
+    // 量縮期間：量比 < 0.7 且近10根量的標準差 / 均量 < 0.35（量能穩定收斂）
+    const vols10 = vols.slice(-10);
+    const volMean10 = vols10.reduce((a,b)=>a+b,0)/10;
+    const volStd10 = Math.sqrt(vols10.reduce((a,b)=>a+(b-volMean10)**2,0)/10);
+    const volCV = volStd10 / (volMean10+1); // 變異係數
+    const isShrinking = vol5avg < vol10avg * 0.8; // 量縮：近5日均量 < 前10日均量 * 0.8
+    // 量縮期間價格穩定度：近5根收盤最大振幅
+    const last5C = candles.slice(-5).map(c=>c.close);
+    const last5Range = (Math.max(...last5C)-Math.min(...last5C)) / (Math.min(...last5C)+1);
+    const isPriceStable = last5Range < 0.025; // 5日收盤振幅 < 2.5%
+
+    let divergeType='none', divergeMsg='', divergeCls='neut', divergeIcon='📊';
+    if(isShrinking && isPriceStable && priceDelta >= 0){
+      // 量縮+價穩：重要觀察階段，無賣壓
+      divergeType='shrink_stable'; divergeMsg='量縮穩定，無賣壓，靜待放量確認方向';
+      divergeCls='neut'; divergeIcon='🔍';
+    } else if(isShrinking && !isPriceStable && priceDelta < 0){
+      // 量縮+偏弱：量縮弱勢，空方縮手但仍有壓力
+      divergeType='shrink_weak'; divergeMsg='量縮偏弱，賣壓仍在，宜觀望';
+      divergeCls='warn'; divergeIcon='⚠';
+    } else if(priceDelta > 0 && volTrend < -vol10avg*0.1){
+      divergeType='bull_div'; divergeMsg='價漲量縮，多頭動能衰竭，注意頂部';
       divergeCls='warn'; divergeIcon='⚠';
     } else if(priceDelta < 0 && volTrend < -vol10avg*0.15){
-      divergeType='bear_shrink'; divergeMsg='價跌量縮，空頭縮手';
+      divergeType='bear_shrink'; divergeMsg='價跌量縮，空頭縮手，尋找低接機會';
       divergeCls='neut'; divergeIcon='📉';
     } else if(priceDelta < 0 && volTrend > vol10avg*0.2){
-      divergeType='bear_div'; divergeMsg='價跌量增，空頭擴張';
+      divergeType='bear_div'; divergeMsg='價跌量增，空頭擴張，避免做多';
       divergeCls='warn'; divergeIcon='🔻';
     } else if(priceDelta > 0 && volTrend > 0){
-      divergeType='healthy'; divergeMsg='價漲量增，趨勢健康';
+      divergeType='healthy'; divergeMsg='價漲量增，趨勢健康，動能充足';
       divergeCls='safe'; divergeIcon='✅';
     } else {
       divergeMsg='量價同步，無明顯背離';
@@ -3769,6 +3899,13 @@ function renderAllCharts(candles, meta){
     if(bcDivPrice){ bcDivPrice.textContent=(priceDelta>=0?'+':'')+priceDelta.toFixed(1); bcDivPrice.className='bcard-val '+pdCls; }
     const bcDivVol=$('bc-div-vol');
     if(bcDivVol){ bcDivVol.textContent=(volTrend>=0?'量增':'量縮')+' '+(volRatio>1?'>':'<')+'均'; bcDivVol.className='bcard-val '+vtCls; }
+    const bcShrinkObs=$('bc-shrink-obs');
+    if(bcShrinkObs){
+      if(isShrinking && isPriceStable)      { bcShrinkObs.textContent='量縮穩定 🔍 靜待方向'; bcShrinkObs.className='bcard-val cyan'; }
+      else if(isShrinking && !isPriceStable){ bcShrinkObs.textContent='量縮偏弱 ⚠ 宜觀望';  bcShrinkObs.className='bcard-val amber'; }
+      else if(!isShrinking)                 { bcShrinkObs.textContent='量能擴張中';           bcShrinkObs.className='bcard-val up'; }
+      else                                  { bcShrinkObs.textContent='量能正常';              bcShrinkObs.className='bcard-val'; }
+    }
   }
 
   // ── 主力出貨警示 + 底部卡片 ⑩ ──
