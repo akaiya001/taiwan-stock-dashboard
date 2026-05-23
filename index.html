@@ -1301,7 +1301,7 @@ function onStockInput(e){
   if(!q){ closeSuggest(); return; }
 
   clearTimeout(_sgDebounce);
-  const isCodeMode = /^\^?\d/.test(q); // 數字或^數字 → 代號模式，用本地比對
+  const isCodeMode = /^\d/.test(q) || q.startsWith('^'); // 數字或^開頭 → 代號模式
 
   if(isCodeMode){
     // 代號模式：本地即時，不需遠端
@@ -2329,8 +2329,8 @@ async function queryStock(){
   if(!raw){ showError('請輸入股票代號或股名（例：2330 或 台積電）'); return; }
 
   // ── 股名 → 代號 反查 ──
-  // 非數字/^開頭 → 當作股名，先查本地 FULL_STOCK_MAP，找不到再遠端搜尋
-  if(!/^\^?\d/.test(raw)){
+  // 非數字開頭 且 非^開頭 → 才當作股名
+  if(!/^\d/.test(raw) && !raw.startsWith('^')){
     // 1. 先查本地（FULL_STOCK_MAP 含先前搜尋過的結果）
     let matched =
       Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name === raw) ||
