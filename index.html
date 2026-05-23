@@ -444,6 +444,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
     <div class="tohlcv-item"><span class="tohlcv-lbl">收盤</span><span class="tohlcv-val" id="th-close">—</span></div>
     <div class="tohlcv-sep"></div>
     <div class="tohlcv-item"><span class="tohlcv-lbl">成交量</span><span class="tohlcv-val" id="th-vol">—</span></div>
+    <div class="tohlcv-item"><span class="tohlcv-lbl">預估量</span><span class="tohlcv-val" id="th-est-vol" title="盤中量能預估（倍數法）">—</span></div>
     <div class="tohlcv-item"><span class="tohlcv-lbl">成交額</span><span class="tohlcv-val" id="th-amt">—</span></div>
     <div class="tohlcv-sep"></div>
     <div class="tohlcv-item"><span class="tohlcv-lbl">日期</span><span class="tohlcv-val" id="th-date">—</span></div>
@@ -631,6 +632,11 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
         <span class="bcard-lbl">量比</span><span class="bcard-val" id="bc-vol-ratio">—</span>
       </div>
       <div class="mini-chart" id="mini-vol2"></div>
+      <div class="bcard-row"><span class="bcard-lbl">預估全日量</span><span class="bcard-val" id="bc-est-vol">—</span></div>
+      <div class="alert-card neut" id="bc-attack-vol-card" style="display:none">
+        <span class="alert-icon">⚡</span>
+        <span><span id="bc-attack-vol-label">攻擊量偵測</span><span class="alert-sub" id="bc-attack-vol-sub">—</span></span>
+      </div>
       <div class="bcard-desc" id="bc-vol-desc">—</div>
     </div>
   </div>
@@ -1510,15 +1516,59 @@ async function fetchStockData(symbol){
   const last = candles[candles.length-1];
   const prev = candles[candles.length-2] || last;
 
-  // 使用昨日（最後一根K線）收盤價，不取即時盤中價
+  // ── 即時盤中資料（Yahoo meta 欄位）──
+  const rtPrice  = meta.regularMarketPrice   ?? null;
+  const rtOpen   = meta.regularMarketOpen    ?? null;
+  const rtHigh   = meta.regularMarketDayHigh ?? null;
+  const rtLow    = meta.regularMarketDayLow  ?? null;
+  const rtVol    = meta.regularMarketVolume  ?? null;  // 股（非張）
+  const rtTime   = meta.regularMarketTime    ?? null;  // unix timestamp
+  const prevClose2 = meta.chartPreviousClose ?? meta.previousClose ?? prev.close;
+
+  // 判斷是否為盤中（台股 09:00-13:30 台北時間）
+  const nowTW = new Date(Date.now() + 8*3600*1000); // UTC+8
+  const twHHMM = nowTW.getUTCHours()*100 + nowTW.getUTCMinutes();
+  const isTrading = twHHMM >= 900 && twHHMM <= 1330;
+
+  // 若有即時價格且在盤中，更新最後一根 K 線為今日即時
+  let liveCandle = false;
+  if(rtPrice && isTrading && rtOpen){
+    last.open   = +rtOpen.toFixed(2);
+    last.high   = +rtHigh.toFixed(2);
+    last.low    = +rtLow.toFixed(2);
+    last.close  = +rtPrice.toFixed(2);
+    last.volume = Math.round((rtVol||0)/1000);
+    liveCandle  = true;
+  }
+
   const price     = last.close;
-  // 前收：前一根 K 線收盤
-  const prevClose = prev.close;
+  const prevClose = prevClose2;
   let change    = +(price - prevClose).toFixed(2);
   let changePct = +(change / prevClose * 100).toFixed(2);
 
-  // 成交量（昨日K線，台股以張計）
+  // 成交量（張）
   const volume    = last.volume;
+
+  // ── 盤中量能預估（量能倍數衰減表）──
+  // 各時段到該時點的累積量佔全日量的比例（倒數即為倍數）
+  const VOL_FACTOR_MAP = [
+    [900,  8.0], [915, 8.0], [930, 5.0], [945, 4.0],
+    [1000, 3.0], [1015,2.5], [1030,2.2], [1045,2.0],
+    [1100, 1.8], [1115,1.7], [1130,1.6], [1145,1.5],
+    [1200,1.45], [1215,1.38],[1230,1.32],[1245,1.25],
+    [1300,1.18], [1315,1.11],[1330,1.0],
+  ];
+  let estDayVol = null, volFactor = null;
+  if(isTrading && volume > 0){
+    // 找當前時段的倍數
+    let factor = 1.0;
+    for(const [hhmm, f] of VOL_FACTOR_MAP){
+      if(twHHMM >= hhmm) factor = f;
+      else break;
+    }
+    volFactor  = factor;
+    estDayVol  = Math.round(volume * factor); // 預估全日成交量（張）
+  }
 
   // 內外盤比（Yahoo 沒有直接提供，用近5日統計估算）
   const recentCandles = candles.slice(-5);
@@ -1571,12 +1621,18 @@ async function fetchStockData(symbol){
       pb:  meta.priceToBook      ?? null,
       dy:  meta.trailingAnnualDividendYield != null
            ? +(meta.trailingAnnualDividendYield * 100).toFixed(2) : null,
-      source: 'Yahoo Finance',
+      source:       'Yahoo Finance',
+    liveCandle,
+    isTrading,
+    estDayVol,   // 預估全日量（張），null=非盤中
+    volFactor,   // 當前時段倍數
     },
     candles,
   };
-  // 存入快取
-  try{ sessionStorage.setItem(cacheKey, JSON.stringify(ret)); }catch(_){}
+  // 盤中即時資料不快取（每分鐘一個 key 讓它自然過期）
+  if(!liveCandle){
+    try{ sessionStorage.setItem(cacheKey, JSON.stringify(ret)); }catch(_){}
+  }
   return ret;
 }
 
@@ -2564,6 +2620,51 @@ function renderHeader(meta){
   setText('th-vol',  fmtInt(meta.volume)+'張');
   setText('th-amt',  fmtNum(meta.turnover,1)+'億');
   setText('th-date', timeDisp);
+
+  // ── 盤中預估量 + 攻擊量警示 ──
+  {
+    const estVol = meta.estDayVol;
+    const factor = meta.volFactor;
+    const thEst  = $('th-est-vol');
+    const bcEst  = $('bc-est-vol');
+    const attackCard = $('bc-attack-vol-card');
+    if(estVol && factor && meta.isTrading){
+      // MA5 量（從 STATE 取）
+      const vols = STATE.rawData?.candles?.map(c=>c.volume) || [];
+      const ma5v = vols.length>=5 ? Math.round(vols.slice(-6,-1).reduce((a,b)=>a+b,0)/5) : 0;
+      const isAttack = ma5v > 0 && estVol > ma5v;
+      const exceedPct = ma5v > 0 ? +((estVol/ma5v-1)*100).toFixed(1) : 0;
+      const estStr = fmtInt(estVol)+'張';
+      const factorStr = `×${factor}`;
+
+      // topbar
+      if(thEst){
+        thEst.textContent = estStr;
+        thEst.className   = 'tohlcv-val ' + (isAttack ? 'up' : '');
+        thEst.title       = `盤中量能預估（當前倍數${factorStr}）${isAttack?'⚡ 超越MA5，具攻擊量！':''}`;
+      }
+      // 卡片
+      if(bcEst){ bcEst.textContent = `${estStr}（${factorStr}）`; bcEst.className='bcard-val '+(isAttack?'up':''); }
+      if(attackCard){
+        attackCard.style.display = 'flex';
+        attackCard.className = 'alert-card ' + (isAttack ? 'safe' : 'neut');
+        const lbl = $('bc-attack-vol-label');
+        const sub = $('bc-attack-vol-sub');
+        if(isAttack){
+          if(lbl) lbl.textContent = '⚡ 具攻擊量！';
+          if(sub) sub.textContent = `預估${estStr} > MA5量${fmtInt(ma5v)}張（+${exceedPct}%）`;
+        } else {
+          if(lbl) lbl.textContent = '量能觀察中';
+          if(sub) sub.textContent = `預估${estStr}，MA5量${fmtInt(ma5v)}張，尚未達攻擊量`;
+        }
+      }
+    } else {
+      // 非盤中：隱藏預估欄位
+      if(thEst)      { thEst.textContent = '—'; thEst.className='tohlcv-val'; }
+      if(bcEst)      { bcEst.textContent = '—（非盤中）'; }
+      if(attackCard) { attackCard.style.display = 'none'; }
+    }
+  }
 
   // 分析面板文字
   const p=STATE.params;
@@ -4071,6 +4172,34 @@ window.addEventListener('DOMContentLoaded', ()=>{
   initCharts();
   queryStock();
   setInterval(setTime, 1000);
+
+  // ── 盤中自動刷新（每60秒，09:00-13:35 台北時間）──
+  let _refreshTimer = null;
+  function scheduleAutoRefresh(){
+    clearInterval(_refreshTimer);
+    _refreshTimer = setInterval(async () => {
+      const now = new Date(Date.now() + 8*3600*1000);
+      const hhmm = now.getUTCHours()*100 + now.getUTCMinutes();
+      if(hhmm < 900 || hhmm > 1335) return; // 非盤中不刷
+      if(!STATE.symbol) return;
+      // 清除快取讓下次查詢取最新資料
+      try{
+        const prefix = `yf_${STATE.symbol}_`;
+        Object.keys(sessionStorage).filter(k=>k.startsWith(prefix)).forEach(k=>sessionStorage.removeItem(k));
+      }catch(_){}
+      console.log('[TechBoard] 盤中自動刷新', new Date().toLocaleTimeString('zh-TW'));
+      const sym = STATE.symbol;
+      try{
+        const data = await fetchStockData(sym);
+        if(data?.candles?.length){
+          STATE.rawData = data;
+          recomputeAndRender();
+          setTime();
+        }
+      }catch(e){ console.warn('[TechBoard] 自動刷新失敗:', e.message); }
+    }, 60000); // 每60秒
+  }
+  scheduleAutoRefresh();
 });
 </script>
 </body>
