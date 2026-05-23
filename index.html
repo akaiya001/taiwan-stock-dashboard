@@ -1190,75 +1190,48 @@ const FULL_STOCK_MAP = {
   '2474':{ name:'可成', type:'股票' },
 };
 
-/** 從 FinMind TaiwanStockInfo 拉取完整清單（非阻斷式，背景執行） */
-async function fetchFullStockList(){
-  try{
-    // 先試 CF Worker（已有 token）
-    const workerUrl = getWorkerUrl();
-    let url = '';
-    if(workerUrl){
-      url = `${workerUrl}?dataset=TaiwanStockInfo`;
-    } else {
-      url = 'https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo';
-    }
-    const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    const json = await r.json();
-    const rows = json.data || [];
-    let count = 0;
-    for(const row of rows){
-      const code = (row.stock_id || '').trim();
-      const name = (row.stock_name || '').trim();
-      const type = (row.type || '').trim();
-      if(!code || !name) continue;
-      // 不覆蓋已有更完整資訊的指數
-      if(!FULL_STOCK_MAP[code]){
-        FULL_STOCK_MAP[code] = { name, type };
-        count++;
-      }
-    }
-    console.log(`[TechBoard] 股票清單載入完成，新增 ${count} 檔，總計 ${Object.keys(FULL_STOCK_MAP).length} 檔`);
-  } catch(e){
-    console.warn('[TechBoard] 股票清單載入失敗（使用內建清單）:', e.message);
+// ── Yahoo Finance 搜尋 API（免 token，透過 CORS proxy）──
+// 傳回台股相關結果（.TW / .TWO / ^TW 開頭）
+async function searchYahooFinance(q){
+  const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&lang=zh-TW&region=TW&quotesCount=10&newsCount=0&enableFuzzyQuery=true&quotesQueryId=tss_match_phrase_query`;
+  // 嘗試多個 CORS proxy
+  for(const proxyFn of CORS_PROXIES){
+    try{
+      const r = await fetch(proxyFn(url), {
+        headers:{ 'Accept':'application/json' },
+        signal: AbortSignal.timeout(4000),
+      });
+      if(!r.ok) continue;
+      const json = await r.json();
+      return (json.quotes || []).filter(q =>
+        q.symbol && (
+          q.symbol.endsWith('.TW') ||
+          q.symbol.endsWith('.TWO') ||
+          q.symbol.startsWith('^TW')
+        )
+      );
+    } catch(_){ continue; }
   }
+  return [];
 }
 
-/** 模糊搜尋：從 FULL_STOCK_MAP 搜尋，並補入 STOCK_DB 的 industry */
-function buildSuggestList(query){
-  const q = query.trim();
-  if(!q) return [];
-  const isCode = /^[\^]?\d/.test(q) || q.startsWith('^'); // 數字或^開頭 → 代號模式
-  const results = [];
-
-  for(const [code, info] of Object.entries(FULL_STOCK_MAP)){
-    let score = 0;
-    let matchField = '';
-
-    if(isCode){
-      const cq = q.replace('^','').toLowerCase();
-      const cc = code.replace('^','').toLowerCase();
-      if(cc.startsWith(cq)){
-        score = cq.length === cc.length ? 100 : 80 - (cc.length - cq.length);
-        matchField = 'code';
-      }
-    } else {
-      if(info.name === q){ score = 100; matchField = 'name'; }
-      else if(info.name.startsWith(q)){ score = 85; matchField = 'name'; }
-      else if(info.name.includes(q)){ score = 60; matchField = 'name'; }
-    }
-
-    if(score > 0){
-      const extra = STOCK_DB[code] || {};
-      results.push({ code, info:{ ...info, industry: extra.industry||info.type||'' }, score, matchField, query: q });
-    }
-  }
-
-  return results.sort((a,b) => b.score - a.score).slice(0, 10);
+/** 把 Yahoo 搜尋結果格式化成 suggest 統一格式 */
+function parseYahooQuotes(quotes, query){
+  return quotes.map(q => {
+    // 去掉 .TW / .TWO 後綴，還原台股代號
+    const code = q.symbol.replace(/\.(TW|TWO)$/, '');
+    const name = q.shortname || q.longname || '';
+    const type = q.typeDisp || q.quoteType || '';
+    // 同步回寫 FULL_STOCK_MAP，讓之後的 queryStock 反查也能用
+    if(!FULL_STOCK_MAP[code]) FULL_STOCK_MAP[code] = { name, type };
+    const extra = STOCK_DB[code] || {};
+    return { code, info:{ name, type, industry: extra.industry||type }, query };
+  });
 }
 
 /** highlight 命中子字串 */
 function hlText(str, q){
-  if(!q) return str;
+  if(!q || !str) return str||'';
   const idx = str.indexOf(q);
   if(idx < 0) return str;
   return str.slice(0, idx)
@@ -1266,22 +1239,48 @@ function hlText(str, q){
     + str.slice(idx + q.length);
 }
 
-let _sgActive = -1;
+/** 從本地 FULL_STOCK_MAP 做代號前綴快速比對（數字輸入用） */
+function buildLocalSuggest(query){
+  const q = query.trim();
+  const results = [];
+  const isIdx = q.startsWith('^');
+  for(const [code, info] of Object.entries(FULL_STOCK_MAP)){
+    let score = 0;
+    const cc = code.replace('^','').toLowerCase();
+    const cq = q.replace('^','').toLowerCase();
+    if(isIdx && code.startsWith('^') && cc.startsWith(cq)) score = 90;
+    else if(!isIdx && cc.startsWith(cq)) score = 80 - (cc.length - cq.length);
+    if(score > 0){
+      const extra = STOCK_DB[code] || {};
+      results.push({ code, info:{ ...info, industry: extra.industry||info.type||'' }, score, query: q });
+    }
+  }
+  return results.sort((a,b) => b.score - a.score).slice(0, 10);
+}
 
-function renderSuggest(items){
+let _sgActive = -1;
+let _sgDebounce = null;
+
+function renderSuggest(items, query){
   const ul = document.getElementById('stock-suggest');
   _sgActive = -1;
   if(!items.length){ ul.className=''; ul.innerHTML=''; return; }
 
-  ul.innerHTML = items.map((it) => {
-    const codeHl = it.matchField === 'code' ? hlText(it.code, it.query) : it.code;
-    const nameHl = it.matchField === 'name' ? hlText(it.info.name, it.query) : it.info.name;
+  ul.innerHTML = items.map(it => {
+    const codeHl = hlText(it.code, query);
+    const nameHl = hlText(it.info.name||'', query);
     return `<li data-code="${it.code}" onclick="selectSuggest('${it.code}')">
       <span class="sg-code">${codeHl}</span>
-      <span class="sg-name">${nameHl}</span>
+      <span class="sg-name">${nameHl||it.info.name||''}</span>
       <span class="sg-ind">${it.info.industry||''}</span>
     </li>`;
   }).join('');
+  ul.className = 'open';
+}
+
+function renderSuggestLoading(){
+  const ul = document.getElementById('stock-suggest');
+  ul.innerHTML = `<li style="color:var(--tx3);font-size:12px;justify-content:center;">搜尋中…</li>`;
   ul.className = 'open';
 }
 
@@ -1299,14 +1298,40 @@ function selectSuggest(code){
 
 function onStockInput(e){
   const q = e.target.value.trim();
-  if(q.length === 0){ closeSuggest(); return; }
-  const items = buildSuggestList(q);
-  renderSuggest(items);
+  if(!q){ closeSuggest(); return; }
+
+  clearTimeout(_sgDebounce);
+  const isCodeMode = /^\^?\d/.test(q); // 數字或^數字 → 代號模式，用本地比對
+
+  if(isCodeMode){
+    // 代號模式：本地即時，不需遠端
+    renderSuggest(buildLocalSuggest(q), q);
+    return;
+  }
+
+  // 股名模式：先顯示本地有的，再遠端補充
+  const local = buildLocalSuggest(q); // 先找本地（通常空）
+  if(local.length) renderSuggest(local, q);
+  else renderSuggestLoading();
+
+  _sgDebounce = setTimeout(async () => {
+    const cur = document.getElementById('stock-input').value.trim();
+    if(cur !== q) return; // 使用者已繼續輸入，捨棄
+    try{
+      const quotes = await searchYahooFinance(q);
+      const items = parseYahooQuotes(quotes, q);
+      const curNow = document.getElementById('stock-input').value.trim();
+      if(curNow === q) renderSuggest(items, q); // 確認 input 未改變
+    } catch(_){
+      const ul = document.getElementById('stock-suggest');
+      ul.className = '';
+    }
+  }, 220);
 }
 
 function onStockKeydown(e){
   const ul = document.getElementById('stock-suggest');
-  const items = ul.querySelectorAll('li');
+  const items = ul.querySelectorAll('li[data-code]');
   if(e.key === 'ArrowDown'){
     e.preventDefault();
     _sgActive = Math.min(_sgActive + 1, items.length - 1);
@@ -1335,6 +1360,9 @@ function onStockKeydown(e){
 document.addEventListener('click', e => {
   if(!e.target.closest('.stock-search-wrap')) closeSuggest();
 });
+
+// fetchFullStockList 改為空操作（已改用 Yahoo 即時搜尋）
+async function fetchFullStockList(){ /* no-op */ }
 
 // ══════════════════════════════════════════
 // Yahoo Finance CORS Proxy 爬蟲
@@ -2300,18 +2328,33 @@ async function queryStock(){
   let raw = $('stock-input').value.trim();
   if(!raw){ showError('請輸入股票代號或股名（例：2330 或 台積電）'); return; }
 
-  // ── 股名 → 代號 反查（查全市場 FULL_STOCK_MAP）──
-  if(!/^[\^]?\d/.test(raw) && !raw.startsWith('^')){
-    // 純文字輸入 → 查股名
-    const matched =
+  // ── 股名 → 代號 反查 ──
+  // 非數字/^開頭 → 當作股名，先查本地 FULL_STOCK_MAP，找不到再遠端搜尋
+  if(!/^\^?\d/.test(raw)){
+    // 1. 先查本地（FULL_STOCK_MAP 含先前搜尋過的結果）
+    let matched =
       Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name === raw) ||
       Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.startsWith(raw)) ||
       Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.includes(raw));
+
+    if(!matched){
+      // 2. 遠端搜尋（Yahoo Finance Search API）
+      hideError(); setStatus('loading');
+      try{
+        const quotes = await searchYahooFinance(raw);
+        parseYahooQuotes(quotes, raw); // 回寫 FULL_STOCK_MAP
+        matched =
+          Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name === raw) ||
+          Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.startsWith(raw)) ||
+          Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.includes(raw));
+      } catch(_){}
+    }
+
     if(matched){
       raw = matched[0];
       $('stock-input').value = raw;
     } else {
-      showError(`找不到「${raw}」，請確認股名或直接輸入代號`); return;
+      showError(`找不到「${raw}」，請輸入股票代號（例：2330）`); setStatus('error'); return;
     }
   }
 
