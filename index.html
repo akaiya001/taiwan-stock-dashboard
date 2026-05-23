@@ -1190,88 +1190,64 @@ const FULL_STOCK_MAP = {
   '2474':{ name:'可成', type:'股票' },
 };
 
-// ── Yahoo Finance 搜尋 API（免 token，透過 CORS proxy）──
-// 傳回台股相關結果（.TW / .TWO / ^TW 開頭）
-/**
- * 從 TWSE / TPEX OpenAPI 預載完整上市上櫃股票清單到 FULL_STOCK_MAP
- * 完全公開，無需 token，有中文名稱
- */
-let _stockListLoaded = false;
-async function fetchFullStockList(){
-  if(_stockListLoaded) return;
-  try{
-    // TWSE 上市
-    const twseUrl = 'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL';
-    // TPEX 上櫃
-    const tpexUrl = 'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes';
+// ══════════════════════════════════════════
+// 股票代號 / 股名 搜尋（TWSE codeQuery API）
+// 瀏覽器端直接呼叫，無需 proxy，支援中文關鍵字
+// API: https://www.twse.com.tw/rwd/zh/api/codeQuery?query=<keyword>
+// ══════════════════════════════════════════
 
-    for(const [url, market] of [[twseUrl,'上市'],[tpexUrl,'上櫃']]){
-      for(const proxyFn of CORS_PROXIES){
-        try{
-          const r = await fetch(proxyFn(url), { signal: AbortSignal.timeout(8000) });
-          if(!r.ok) continue;
-          const rows = await r.json();
-          for(const row of rows){
-            const code = (row.Code||row.SecuritiesCompanyCode||'').trim();
-            const name = (row.Name||row.CompanyName||'').trim();
-            if(!code||!name) continue;
-            if(!FULL_STOCK_MAP[code]) FULL_STOCK_MAP[code]={ name, type: market };
+/**
+ * 呼叫 TWSE codeQuery，回傳 [{code, name, market}]
+ * 同時查上市（TWSE）與上櫃（TPEX）
+ */
+async function twseCodeQuery(keyword){
+  const results = [];
+  try{
+    // 上市：TWSE
+    const r1 = await fetch(
+      `https://www.twse.com.tw/rwd/zh/api/codeQuery?query=${encodeURIComponent(keyword)}`,
+      { signal: AbortSignal.timeout(4000) }
+    );
+    if(r1.ok){
+      const j1 = await r1.json();
+      // 回傳格式：{ suggestions:[{value:"2330\t台積電\t半導體業", data:...}, ...] }
+      for(const s of (j1.suggestions||[])){
+        const val = s.value || s;
+        const parts = val.split('\t');
+        if(parts.length >= 2 && parts[0] && parts[1]){
+          const code = parts[0].trim();
+          const name = parts[1].trim();
+          if(/^\d/.test(code)){
+            results.push({ code, name, market:'上市' });
+            if(!FULL_STOCK_MAP[code]) FULL_STOCK_MAP[code] = { name, type:'上市' };
           }
-          break; // 此來源成功，跳下一個市場
-        } catch(_){ continue; }
+        }
       }
     }
-    _stockListLoaded = true;
-    console.log('[TechBoard] 股票清單載入，共', Object.keys(FULL_STOCK_MAP).length, '檔');
-  } catch(e){
-    console.warn('[TechBoard] 股票清單載入失敗:', e.message);
-  }
+  } catch(_){}
+  try{
+    // 上櫃：TPEX
+    const r2 = await fetch(
+      `https://www.tpex.org.tw/web/stock/aftertrading/otc_quotes_no1430/stk_wn1430_result.php?l=zh-tw&sw=${encodeURIComponent(keyword)}&t=D`,
+      { signal: AbortSignal.timeout(4000) }
+    );
+    if(r2.ok){
+      const j2 = await r2.json();
+      for(const row of (j2.aaData||[])){
+        // row[0]=代號, row[1]=名稱
+        const code = (row[0]||'').trim();
+        const name = (row[1]||'').trim();
+        if(code && name && /^\d/.test(code)){
+          results.push({ code, name, market:'上櫃' });
+          if(!FULL_STOCK_MAP[code]) FULL_STOCK_MAP[code] = { name, type:'上櫃' };
+        }
+      }
+    }
+  } catch(_){}
+  return results;
 }
 
-/** Yahoo Finance Search（備用，主要靠 FULL_STOCK_MAP 本地搜尋） */
-async function searchYahooFinance(q){
-  const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&lang=zh-TW&region=TW&quotesCount=10&newsCount=0`;
-  for(const proxyFn of CORS_PROXIES){
-    try{
-      const r = await fetch(proxyFn(url), {
-        headers:{ 'Accept':'application/json' },
-        signal: AbortSignal.timeout(4000),
-      });
-      if(!r.ok) continue;
-      const json = await r.json();
-      return (json.quotes || []).filter(q =>
-        q.symbol && (q.symbol.endsWith('.TW') || q.symbol.endsWith('.TWO') || q.symbol.startsWith('^TW'))
-      );
-    } catch(_){ continue; }
-  }
-  return [];
-}
-
-/** 把 Yahoo 搜尋結果格式化成 suggest 統一格式 */
-function parseYahooQuotes(quotes, query){
-  return quotes.map(q => {
-    // 去掉 .TW / .TWO 後綴，還原台股代號
-    const code = q.symbol.replace(/\.(TW|TWO)$/, '');
-    const name = q.shortname || q.longname || '';
-    const type = q.typeDisp || q.quoteType || '';
-    // 同步回寫 FULL_STOCK_MAP，讓之後的 queryStock 反查也能用
-    if(!FULL_STOCK_MAP[code]) FULL_STOCK_MAP[code] = { name, type };
-    const extra = STOCK_DB[code] || {};
-    return { code, info:{ name, type, industry: extra.industry||type }, query };
-  });
-}
-
-/** highlight 命中子字串 */
-function hlText(str, q){
-  if(!q || !str) return str||'';
-  const idx = str.indexOf(q);
-  if(idx < 0) return str;
-  return str.slice(0, idx)
-    + `<span class="sg-match">${str.slice(idx, idx+q.length)}</span>`
-    + str.slice(idx + q.length);
-}
-
-/** 從本地 FULL_STOCK_MAP 做股名模糊搜尋（文字輸入用） */
+/** 從本地 FULL_STOCK_MAP 做股名模糊搜尋 */
 function buildNameSuggest(query){
   const q = query.trim();
   if(!q) return [];
@@ -1300,13 +1276,23 @@ function buildLocalSuggest(query){
     const cc = code.replace('^','').toLowerCase();
     const cq = q.replace('^','').toLowerCase();
     if(isIdx && code.startsWith('^') && cc.startsWith(cq)) score = 90;
-    else if(!isIdx && cc.startsWith(cq)) score = 80 - (cc.length - cq.length);
+    else if(!isIdx && /^\d/.test(q) && cc.startsWith(cq)) score = 80 - (cc.length - cq.length);
     if(score > 0){
       const extra = STOCK_DB[code] || {};
       results.push({ code, info:{ ...info, industry: extra.industry||info.type||'' }, score, query: q });
     }
   }
   return results.sort((a,b) => b.score - a.score).slice(0, 10);
+}
+
+/** highlight 命中子字串 */
+function hlText(str, q){
+  if(!q || !str) return str||'';
+  const idx = str.indexOf(q);
+  if(idx < 0) return str;
+  return str.slice(0, idx)
+    + `<span class="sg-match">${str.slice(idx, idx+q.length)}</span>`
+    + str.slice(idx + q.length);
 }
 
 let _sgActive = -1;
@@ -1316,13 +1302,12 @@ function renderSuggest(items, query){
   const ul = document.getElementById('stock-suggest');
   _sgActive = -1;
   if(!items.length){ ul.className=''; ul.innerHTML=''; return; }
-
   ul.innerHTML = items.map(it => {
     const codeHl = hlText(it.code, query);
     const nameHl = hlText(it.info.name||'', query);
     return `<li data-code="${it.code}" onclick="selectSuggest('${it.code}')">
       <span class="sg-code">${codeHl}</span>
-      <span class="sg-name">${nameHl||it.info.name||''}</span>
+      <span class="sg-name">${nameHl}</span>
       <span class="sg-ind">${it.info.industry||''}</span>
     </li>`;
   }).join('');
@@ -1331,7 +1316,7 @@ function renderSuggest(items, query){
 
 function renderSuggestLoading(){
   const ul = document.getElementById('stock-suggest');
-  ul.innerHTML = `<li style="color:var(--tx3);font-size:12px;justify-content:center;">搜尋中…</li>`;
+  ul.innerHTML = `<li style="color:var(--tx3);font-size:12px;justify-content:center;cursor:default">搜尋中…</li>`;
   ul.className = 'open';
 }
 
@@ -1350,21 +1335,36 @@ function selectSuggest(code){
 function onStockInput(e){
   const q = e.target.value.trim();
   if(!q){ closeSuggest(); return; }
-
   clearTimeout(_sgDebounce);
-  const isCodeMode = /^\d/.test(q) || q.startsWith('^'); // 數字或^開頭 → 代號模式
 
+  const isCodeMode = /^\d/.test(q) || q.startsWith('^');
   if(isCodeMode){
-    // 代號模式：本地即時，不需遠端
     renderSuggest(buildLocalSuggest(q), q);
     return;
   }
 
-  // 股名模式：查本地 FULL_STOCK_MAP（已有完整中文名稱）
-  // 若清單未載入完成，先 trigger fetchFullStockList（非阻斷）
-  if(!_stockListLoaded) fetchFullStockList();
+  // 股名模式：先顯示本地已有的，同時發送遠端查詢
   const local = buildNameSuggest(q);
-  renderSuggest(local, q);
+  if(local.length) renderSuggest(local, q);
+  else renderSuggestLoading();
+
+  _sgDebounce = setTimeout(async () => {
+    const cur = document.getElementById('stock-input').value.trim();
+    if(cur !== q) return;
+    const apiResults = await twseCodeQuery(q);
+    const curNow = document.getElementById('stock-input').value.trim();
+    if(curNow !== q) return;
+    if(apiResults.length){
+      const items = apiResults.map(r => ({
+        code: r.code,
+        info: { name: r.name, industry: r.market },
+        query: q
+      }));
+      renderSuggest(items, q);
+    } else if(!local.length){
+      closeSuggest();
+    }
+  }, 300);
 }
 
 function onStockKeydown(e){
@@ -1399,7 +1399,9 @@ document.addEventListener('click', e => {
   if(!e.target.closest('.stock-search-wrap')) closeSuggest();
 });
 
-// fetchFullStockList 已在上方 searchYahooFinance 區塊定義
+// fetchFullStockList: no-op（改用 twseCodeQuery 即時搜尋）
+let _stockListLoaded = true;
+async function fetchFullStockList(){ /* no-op */ }
 
 // ══════════════════════════════════════════
 // Yahoo Finance CORS Proxy 爬蟲
@@ -2368,15 +2370,22 @@ async function queryStock(){
   // ── 股名 → 代號 反查 ──
   // 非數字開頭 且 非^開頭 → 才當作股名
   if(!/^\d/.test(raw) && !raw.startsWith('^')){
-    // 確保清單已載入
-    if(!_stockListLoaded){ hideError(); setStatus('loading'); await fetchFullStockList(); }
-    // 查 FULL_STOCK_MAP 中文名（完整比對 → 前綴 → 包含）
-    const matched =
+    hideError(); setStatus('loading');
+    // 1. 先查本地已緩存（FULL_STOCK_MAP）
+    let matched =
       Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name === raw) ||
       Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.startsWith(raw)) ||
       Object.entries(FULL_STOCK_MAP).find(([,v]) => v.name.includes(raw));
+    if(!matched){
+      // 2. 呼叫 TWSE codeQuery API
+      const apiResults = await twseCodeQuery(raw);
+      if(apiResults.length){
+        // 回寫 FULL_STOCK_MAP 並取第一筆
+        matched = [apiResults[0].code, { name: apiResults[0].name }];
+      }
+    }
     if(matched){
-      raw = matched[0];
+      raw = Array.isArray(matched) ? matched[0] : matched[0];
       $('stock-input').value = raw;
     } else {
       showError(`找不到「${raw}」，請輸入股票代號（例：2330）`); setStatus('error'); return;
