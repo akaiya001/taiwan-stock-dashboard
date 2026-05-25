@@ -3650,13 +3650,15 @@ function renderAllCharts(candles, meta){
   else               advice=`強勢空頭，下跌趨勢明確。<b>建議：</b>觀望為宜，等待止跌訊號（如KD低檔黃金交叉）再評估。`;
   setHTML('ap-advice', advice);
 
-  // 整體結論
-  const concl=`技術面評分 ${score.toFixed(1)}/10（${trendLabel}）。均線${maLabel}，KD ${kdLabel}，MACD ${macdLabel}，RSI ${rsiLast!=null?rsiLast.toFixed(1):'—'}（${rsiLabel}），量能${volLabel}。`
+  // 整體結論（divergeType 在 Batch C 計算，此處先佔位，最終在 Batch C 後更新）
+  // 先輸出不含量縮資訊的版本，Batch C 執行後再補充
+  const _baseConclFn = (dvType) =>
+    `技術面評分 ${score.toFixed(1)}/10（${trendLabel}）。均線${maLabel}，KD ${kdLabel}，MACD ${macdLabel}，RSI ${rsiLast!=null?rsiLast.toFixed(1):'—'}（${rsiLabel}），量能${volLabel}。`
     + (patternDesc?` ▶ ${patternDesc}`:'')
-    + (divergeType==='shrink_stable'?' ▶ 量縮穩定觀察期，無賣壓，等待放量突破。':'')
-    + (divergeType==='shrink_weak'?' ▶ 量縮偏弱，買盤消失但仍有賣壓，宜觀望。':'')
+    + (dvType==='shrink_stable'?' ▶ 量縮穩定觀察期，無賣壓，等待放量突破。':'')
+    + (dvType==='shrink_weak'?' ▶ 量縮偏弱，買盤消失但仍有賣壓，宜觀望。':'')
     + `\n\n${advice.replace(/<[^>]+>/g,'')}`;
-  setText('ap-conclusion', concl);
+  setText('ap-conclusion', _baseConclFn('none')); // 先設預設，Batch C 會覆蓋
 
   // ══════════════════════════════════════════
   // 下方卡片渲染（Batch B 升級版）
@@ -4007,6 +4009,8 @@ function renderAllCharts(candles, meta){
       else if(!isShrinking)                 { bcShrinkObs.textContent='量能擴張中';           bcShrinkObs.className='bcard-val up'; }
       else                                  { bcShrinkObs.textContent='量能正常';              bcShrinkObs.className='bcard-val'; }
     }
+    // 結論補充量縮資訊（divergeType 現在確定了）
+    setText('ap-conclusion', _baseConclFn(divergeType));
   }
 
   // ── 主力出貨警示 + 底部卡片 ⑩ ──
