@@ -4281,12 +4281,12 @@ function renderAllCharts(candles, meta){
 
   // ── KD / MACD 黃金交叉 & 死亡交叉 標記 ──
   {
-    // KD 交叉偵測
+    // KD 交叉偵測：KD<=50以下才標黃金交叉，>=50以上才標死亡交叉
     const kdCrossData = [];
     for(let i=1; i<kdK.length; i++){
       if(kdK[i]==null||kdD[i]==null||kdK[i-1]==null||kdD[i-1]==null) continue;
-      const golden = kdK[i-1]<=kdD[i-1] && kdK[i]>kdD[i]; // 黃金交叉
-      const death  = kdK[i-1]>=kdD[i-1] && kdK[i]<kdD[i]; // 死亡交叉
+      const golden = kdK[i-1]<=kdD[i-1] && kdK[i]>kdD[i] && kdK[i]<=50; // 低檔黃金交叉
+      const death  = kdK[i-1]>=kdD[i-1] && kdK[i]<kdD[i] && kdK[i]>=50; // 高檔死亡交叉
       if(golden) kdCrossData.push({
         value:[i, Math.min(kdK[i],kdD[i])-6],
         symbol:'triangle', symbolSize:8,
@@ -4300,12 +4300,12 @@ function renderAllCharts(candles, meta){
         label:{show:true, formatter:'☠', fontSize:10, position:'top', offset:[0,-2]}
       });
     }
-    // MACD DIF/DEA 交叉偵測
+    // MACD DIF/DEA 交叉偵測：0軸以下黃金交叉，0軸以上死亡交叉
     const macdCrossData = [];
     for(let i=1; i<dif.length; i++){
       if(dif[i]==null||dea[i]==null||dif[i-1]==null||dea[i-1]==null) continue;
-      const golden = dif[i-1]<=dea[i-1] && dif[i]>dea[i];
-      const death  = dif[i-1]>=dea[i-1] && dif[i]<dea[i];
+      const golden = dif[i-1]<=dea[i-1] && dif[i]>dea[i] && dif[i]<0; // 0軸下黃金交叉
+      const death  = dif[i-1]>=dea[i-1] && dif[i]<dea[i] && dif[i]>0; // 0軸上死亡交叉
       const yBase  = (dif[i]+dea[i])/2;
       const yRange = Math.abs(Math.max(...dif.filter(Boolean)) - Math.min(...dif.filter(Boolean)))||1;
       if(golden) macdCrossData.push({
