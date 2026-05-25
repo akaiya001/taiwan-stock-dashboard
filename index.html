@@ -1523,7 +1523,13 @@ async function fetchStockData(symbol){
   const rtLow    = meta.regularMarketDayLow  ?? null;
   const rtVol    = meta.regularMarketVolume  ?? null;  // 股（非張）
   const rtTime   = meta.regularMarketTime    ?? null;  // unix timestamp
-  const prevClose2 = meta.chartPreviousClose ?? meta.previousClose ?? prev.close;
+  // ── 前一交易日收盤價（漲跌幅基準）──
+  // 優先用 K 線陣列的倒數第二根（真實前日收盤），meta 欄位僅作備用
+  // 注意：liveCandle 覆蓋後 last 已是今日，prev 才是昨日
+  const prevClose2 = prev.close
+    || meta.chartPreviousClose
+    || meta.previousClose
+    || prev.close;
 
   // 判斷是否為盤中（台股 09:00-13:30 台北時間）
   const nowTW = new Date(Date.now() + 8*3600*1000); // UTC+8
