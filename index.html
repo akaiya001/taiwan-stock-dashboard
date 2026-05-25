@@ -255,6 +255,16 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 .cal-tag.div{background:var(--dnbg);color:var(--dn)}
 .cal-tag.note{background:rgba(74,144,226,.12);color:var(--blue)}
 .cal-tag.warn{background:var(--upbg);color:var(--up)}
+.inspect-btn{background:var(--bg2);border:1px solid var(--bd1);border-radius:3px;
+  color:var(--tx2);cursor:pointer;font-size:11px;padding:3px 8px;transition:background .15s;}
+.inspect-btn:hover{background:var(--bg3);}
+.inspect-btn.active{background:var(--amber)!important;border-color:var(--amber);color:#0d1117;}
+.inspect-nav{display:none;align-items:center;gap:4px;margin-left:4px;}
+.inspect-nav.show{display:flex;}
+.inspect-nav button{background:var(--bg2);border:1px solid var(--bd1);border-radius:3px;
+  color:var(--tx2);cursor:pointer;font-size:13px;padding:2px 8px;line-height:1;}
+.inspect-nav button:hover{background:var(--cyan);color:#0d1117;}
+.inspect-info{font-size:11px;color:var(--cyan);min-width:120px;white-space:nowrap;}
 .zoom-btn{background:var(--bg2);border:1px solid var(--bd1);border-radius:3px;
   color:var(--tx3);font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;
   transition:background .15s,color .15s;font-family:var(--mono);}
@@ -536,6 +546,14 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
       <button class="zoom-btn" onclick="zoomChart(60)"  title="近60根">60</button>
       <button class="zoom-btn" onclick="zoomChart(120)" title="近120根">120</button>
       <button class="zoom-btn" onclick="zoomChart(0)"   title="全部顯示">全</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <button class="inspect-btn" id="inspect-toggle-btn" onclick="toggleInspectLine()" title="點選K棒啟動查價線，←→移動，再按關閉">📌 查價線</button>
+      <div class="inspect-nav" id="inspect-nav">
+        <button onclick="moveInspect(-1)" title="往左一根">◀</button>
+        <button onclick="moveInspect(1)"  title="往右一根">▶</button>
+        <span class="inspect-info" id="inspect-info">—</span>
+      </div>
     </div>
     <div class="toolbar-right">
       <span class="toolbar-info">RSI: <b id="toolbar-rsi">—</b></span>
@@ -2541,6 +2559,8 @@ function initCharts(){
   });
   // 官方群組聯動（tooltip + axisPointer 同步）
   echarts.connect('techboard');
+  // 查價線點擊綁定
+  bindInspectClick();
 
   // dataZoom 同步（inside zoom 不觸發 connect，需手動同步）
   CHARTS.main?.on('dataZoom', ()=>{
@@ -2752,6 +2772,93 @@ function zoomChart(n){
   // active 樣式
   document.querySelectorAll('.zoom-btn').forEach(b=>{
     b.classList.toggle('active', b.textContent.trim()===(n===0?'全':String(n)));
+  });
+}
+
+// ══════════════════════════════════════════
+// 查價線（Price Inspector Line）
+// ══════════════════════════════════════════
+const INSPECT = { active:false, idx:null };
+
+function toggleInspectLine(){
+  INSPECT.active = !INSPECT.active;
+  const btn = $('inspect-toggle-btn');
+  const nav = $('inspect-nav');
+  if(!INSPECT.active){
+    INSPECT.idx = null;
+    btn?.classList.remove('active');
+    nav?.classList.remove('show');
+    clearInspectLine();
+  } else {
+    btn?.classList.add('active');
+    nav?.classList.add('show');
+    // 預設停在最後一根
+    const n = STATE.rawData?.candles?.length;
+    if(n) setInspectIdx(n - 1);
+  }
+}
+
+function clearInspectLine(){
+  const empty = { data:[], animation:false };
+  ['main','vol','kd','macd','rsi'].forEach(id=>{
+    CHARTS[id]?.setOption({ series:[{ name:'__inspect__', type:'scatter', data:[], markLine:empty }] }, false);
+  });
+}
+
+function setInspectIdx(idx){
+  const candles = STATE.rawData?.candles;
+  const labels  = STATE.rawData?.labels || candles?.map((_,i)=>i);
+  if(!candles || idx < 0 || idx >= candles.length) return;
+  INSPECT.idx = idx;
+  const c = candles[idx];
+  const lbl = labels[idx];
+
+  // 顯示資訊
+  const info = $('inspect-info');
+  if(info) info.textContent = `${lbl}　收${c.close?.toFixed(2)}　量${(c.volume||0).toLocaleString()}張`;
+
+  // markLine 設定（垂直線）
+  const lineData = [{ xAxis: lbl,
+    lineStyle:{color:'rgba(251,191,36,.75)',width:1.2,type:'dashed'},
+    label:{show:false} }];
+
+  const mlCfg = { silent:true, symbol:'none', animation:false, data: lineData };
+
+  // 各圖注入同一條垂直線（用 scatter 掛 markLine，name 固定避免 series 累積）
+  ['main','vol','kd','macd','rsi'].forEach(id=>{
+    CHARTS[id]?.setOption({
+      series:[{ name:'__inspect__', type:'scatter', data:[], silent:true, z:20,
+        markLine:mlCfg }]
+    }, false);
+  });
+}
+
+function moveInspect(delta){
+  if(!INSPECT.active) return;
+  const n = STATE.rawData?.candles?.length || 0;
+  const cur = INSPECT.idx ?? (n - 1);
+  setInspectIdx(Math.max(0, Math.min(n - 1, cur + delta)));
+}
+
+// 鍵盤 ← → 操控查價線
+document.addEventListener('keydown', e => {
+  if(!INSPECT.active) return;
+  if(e.key === 'ArrowLeft')  { e.preventDefault(); moveInspect(-1); }
+  if(e.key === 'ArrowRight') { e.preventDefault(); moveInspect(1);  }
+});
+
+// 點擊主圖啟動查價線並定位
+// （在 initCharts 之後呼叫 bindInspectClick）
+function bindInspectClick(){
+  CHARTS.main?.on('click', params=>{
+    if(params.componentType === 'series' || params.componentType === 'xAxis'){
+      if(!INSPECT.active){
+        INSPECT.active = true;
+        $('inspect-toggle-btn')?.classList.add('active');
+        $('inspect-nav')?.classList.add('show');
+      }
+      if(params.dataIndex != null) setInspectIdx(params.dataIndex);
+    }
   });
 }
 
@@ -4171,6 +4278,76 @@ function renderAllCharts(candles, meta){
     const textEl=$('concl-text');
     if(textEl) textEl.innerHTML=(keyParts.length?keyParts.join('，')+`。`:'') + adviceShort+'。';
   }
+
+  // ── KD / MACD 黃金交叉 & 死亡交叉 標記 ──
+  {
+    // KD 交叉偵測
+    const kdCrossData = [];
+    for(let i=1; i<kdK.length; i++){
+      if(kdK[i]==null||kdD[i]==null||kdK[i-1]==null||kdD[i-1]==null) continue;
+      const golden = kdK[i-1]<=kdD[i-1] && kdK[i]>kdD[i]; // 黃金交叉
+      const death  = kdK[i-1]>=kdD[i-1] && kdK[i]<kdD[i]; // 死亡交叉
+      if(golden) kdCrossData.push({
+        value:[i, Math.min(kdK[i],kdD[i])-6],
+        symbol:'triangle', symbolSize:8,
+        itemStyle:{color:'#fbbf24'},
+        label:{show:true, formatter:'⚡', fontSize:10, position:'bottom', offset:[0,2]}
+      });
+      if(death) kdCrossData.push({
+        value:[i, Math.max(kdK[i],kdD[i])+6],
+        symbol:'triangle', symbolRotate:180, symbolSize:8,
+        itemStyle:{color:'#e84545'},
+        label:{show:true, formatter:'☠', fontSize:10, position:'top', offset:[0,-2]}
+      });
+    }
+    // MACD DIF/DEA 交叉偵測
+    const macdCrossData = [];
+    for(let i=1; i<dif.length; i++){
+      if(dif[i]==null||dea[i]==null||dif[i-1]==null||dea[i-1]==null) continue;
+      const golden = dif[i-1]<=dea[i-1] && dif[i]>dea[i];
+      const death  = dif[i-1]>=dea[i-1] && dif[i]<dea[i];
+      const yBase  = (dif[i]+dea[i])/2;
+      const yRange = Math.abs(Math.max(...dif.filter(Boolean)) - Math.min(...dif.filter(Boolean)))||1;
+      if(golden) macdCrossData.push({
+        value:[i, yBase - yRange*0.08],
+        symbol:'triangle', symbolSize:7,
+        itemStyle:{color:'#fbbf24'},
+        label:{show:true, formatter:'⚡', fontSize:9, position:'bottom', offset:[0,2]}
+      });
+      if(death) macdCrossData.push({
+        value:[i, yBase + yRange*0.08],
+        symbol:'triangle', symbolRotate:180, symbolSize:7,
+        itemStyle:{color:'#e84545'},
+        label:{show:true, formatter:'☠', fontSize:9, position:'top', offset:[0,-2]}
+      });
+    }
+    // 注入 KD 圖
+    CHARTS.kd?.setOption({ series:[
+      { name:'KD交叉', type:'scatter', data:kdCrossData, z:10,
+        xAxisIndex:0, yAxisIndex:0,
+        tooltip:{ formatter: p=>{
+          const isG = p.data?.itemStyle?.color==='#fbbf24';
+          return isG?'⚡ KD黃金交叉':'☠ KD死亡交叉';
+        }}
+      }
+    ]}, false);
+    // 注入 MACD 圖
+    CHARTS.macd?.setOption({ series:[
+      { name:'MACD交叉', type:'scatter', data:macdCrossData, z:10,
+        xAxisIndex:0, yAxisIndex:0,
+        tooltip:{ formatter: p=>{
+          const isG = p.data?.itemStyle?.color==='#fbbf24';
+          return isG?'⚡ MACD黃金交叉':'☠ MACD死亡交叉';
+        }}
+      }
+    ]}, false);
+  }
+
+  // ── 查價線重繪（資料更新後維持位置）──
+  if(INSPECT.active && INSPECT.idx != null){
+    setTimeout(()=>setInspectIdx(INSPECT.idx), 80);
+  }
+
 } // end renderAllCharts
 
 // ══════════════════════════════════════════
