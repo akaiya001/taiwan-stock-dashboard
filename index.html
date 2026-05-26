@@ -3502,6 +3502,165 @@ function renderAllCharts(candles, meta){
       });
     }
 
+    // ── 下跌旗形 K線圖疊加 ──
+    if(showPattern && bearFlagFound){
+      const seg = candles.slice(-15);
+      const off = total - 15; // segment 在全陣列的起點
+      // 旗杆（前5根，紅色粗線連最高→最低）
+      const poleHigh = Math.max(...seg.slice(0,5).map(c=>c.high));
+      const poleLow  = Math.min(...seg.slice(0,5).map(c=>c.low));
+      const poleStartIdx = off + seg.slice(0,5).findIndex(c=>c.high===poleHigh);
+      const poleEndIdx   = off + 4;
+      patternSeries.push({
+        name:'下跌旗-旗杆', type:'line',
+        data: new Array(total).fill(null).map((_,i)=>
+          i===poleStartIdx?poleHigh: i===poleEndIdx?poleLow: null),
+        connectNulls:true,
+        lineStyle:{color:'#e84545',width:3,opacity:.7},
+        symbol:'none', z:9, silent:true,
+      });
+      // 旗面（後10根，兩條平行下行趨勢線）
+      const flag = seg.slice(5);
+      const fH = flag.map(c=>c.high), fL = flag.map(c=>c.low);
+      const flagLineH = new Array(total).fill(null);
+      const flagLineL = new Array(total).fill(null);
+      flag.forEach((_,j)=>{ flagLineH[off+5+j]=fH[j]; flagLineL[off+5+j]=fL[j]; });
+      patternSeries.push({
+        name:'下跌旗-上軌', type:'line', data:flagLineH, connectNulls:true,
+        lineStyle:{color:'#e84545',width:1.2,type:'dashed',opacity:.8},
+        symbol:'none', z:9, silent:true,
+      });
+      patternSeries.push({
+        name:'下跌旗-下軌', type:'line', data:flagLineL, connectNulls:true,
+        lineStyle:{color:'#e84545',width:1.2,type:'dashed',opacity:.8},
+        symbol:'none', z:9, silent:true,
+      });
+      // Badge
+      const bD2=new Array(total).fill(null); bD2[total-1]=candles[total-1].high*1.015;
+      patternSeries.push({
+        name:'下跌旗Badge', type:'scatter', data:bD2, symbolSize:0, z:15, silent:true,
+        label:{ show:true, formatter:'⚑ 下跌旗形 80%\n趨快賣出',
+          color:'#e84545', fontWeight:700, fontSize:10,
+          backgroundColor:'rgba(26,12,12,.9)', padding:[3,8], borderRadius:3,
+          borderColor:'#7a2020', borderWidth:1 },
+      });
+    }
+
+    // ── 上升旗形 K線圖疊加 ──
+    if(showPattern && bullFlagFound){
+      const seg = candles.slice(-15);
+      const off = total - 15;
+      const poleHigh = Math.max(...seg.slice(0,5).map(c=>c.high));
+      const poleLow  = Math.min(...seg.slice(0,5).map(c=>c.low));
+      const poleStartIdx = off + seg.slice(0,5).findIndex(c=>c.low===poleLow);
+      const poleEndIdx   = off + 4;
+      patternSeries.push({
+        name:'上升旗-旗杆', type:'line',
+        data: new Array(total).fill(null).map((_,i)=>
+          i===poleStartIdx?poleLow: i===poleEndIdx?poleHigh: null),
+        connectNulls:true,
+        lineStyle:{color:'#1db85a',width:3,opacity:.7},
+        symbol:'none', z:9, silent:true,
+      });
+      const flag = seg.slice(5);
+      const fH = flag.map(c=>c.high), fL = flag.map(c=>c.low);
+      const flagLineH = new Array(total).fill(null);
+      const flagLineL = new Array(total).fill(null);
+      flag.forEach((_,j)=>{ flagLineH[off+5+j]=fH[j]; flagLineL[off+5+j]=fL[j]; });
+      patternSeries.push({
+        name:'上升旗-上軌', type:'line', data:flagLineH, connectNulls:true,
+        lineStyle:{color:'#1db85a',width:1.2,type:'dashed',opacity:.8},
+        symbol:'none', z:9, silent:true,
+      });
+      patternSeries.push({
+        name:'上升旗-下軌', type:'line', data:flagLineL, connectNulls:true,
+        lineStyle:{color:'#1db85a',width:1.2,type:'dashed',opacity:.8},
+        symbol:'none', z:9, silent:true,
+      });
+      const bD2=new Array(total).fill(null); bD2[total-1]=candles[total-1].high*1.015;
+      patternSeries.push({
+        name:'上升旗Badge', type:'scatter', data:bD2, symbolSize:0, z:15, silent:true,
+        label:{ show:true, formatter:'⚑ 上升旗形 80%\n趨緊買入',
+          color:'#1db85a', fontWeight:700, fontSize:10,
+          backgroundColor:'rgba(10,24,18,.9)', padding:[3,8], borderRadius:3,
+          borderColor:'#0e5a2a', borderWidth:1 },
+      });
+    }
+
+    // ── 上升楔形 K線圖疊加 ──
+    if(showPattern && bullWedgeFound){
+      const seg = candles.slice(-12);
+      const off = total - 12;
+      const fH = seg.map(c=>c.high), fL = seg.map(c=>c.low);
+      const wLineH = new Array(total).fill(null);
+      const wLineL = new Array(total).fill(null);
+      seg.forEach((_,j)=>{ wLineH[off+j]=fH[j]; wLineL[off+j]=fL[j]; });
+      patternSeries.push({
+        name:'楔形-上軌', type:'line', data:wLineH, connectNulls:true,
+        lineStyle:{color:'#22d3ee',width:1.5,type:'dashed',opacity:.85},
+        symbol:'none', z:9, silent:true,
+      });
+      patternSeries.push({
+        name:'楔形-下軌', type:'line', data:wLineL, connectNulls:true,
+        lineStyle:{color:'#22d3ee',width:1.5,type:'dashed',opacity:.85},
+        symbol:'none', z:9, silent:true,
+      });
+      const bD2=new Array(total).fill(null); bD2[total-1]=candles[total-1].high*1.015;
+      patternSeries.push({
+        name:'楔形Badge', type:'scatter', data:bD2, symbolSize:0, z:15, silent:true,
+        label:{ show:true, formatter:'▲ 上升楔形 100%\n迎接暴漲',
+          color:'#22d3ee', fontWeight:700, fontSize:10,
+          backgroundColor:'rgba(8,20,28,.9)', padding:[3,8], borderRadius:3,
+          borderColor:'#0e4a5a', borderWidth:1 },
+      });
+    }
+
+    // ── 箱型盤整 K線圖疊加 ──
+    if(showPattern && boxFound){
+      const seg = candles.slice(-10);
+      const off = total - 10;
+      const boxH = Math.max(...seg.map(c=>c.high));
+      const boxL = Math.min(...seg.map(c=>c.low));
+      // 上下水平線
+      patternSeries.push({
+        name:'箱型-上緣', type:'scatter', data:[], z:9,
+        markLine:{ silent:true, symbol:'none', data:[[
+          { yAxis:boxH, coord:[off, boxH],
+            lineStyle:{color:'rgba(251,191,36,.6)',width:1.2,type:'dashed'},
+            label:{show:true, formatter:`壓力 ${fmtNum(boxH,1)}`,
+              color:'#fbbf24', fontSize:8, position:'insideStartTop'} },
+          { yAxis:boxH, coord:[total-1, boxH] },
+        ]] },
+      });
+      patternSeries.push({
+        name:'箱型-下緣', type:'scatter', data:[], z:9,
+        markLine:{ silent:true, symbol:'none', data:[[
+          { yAxis:boxL, coord:[off, boxL],
+            lineStyle:{color:'rgba(251,191,36,.6)',width:1.2,type:'dashed'},
+            label:{show:true, formatter:`支撐 ${fmtNum(boxL,1)}`,
+              color:'#fbbf24', fontSize:8, position:'insideStartBottom'} },
+          { yAxis:boxL, coord:[total-1, boxL] },
+        ]] },
+      });
+      // 色塊
+      patternSeries.push({
+        name:'箱型色塊', type:'scatter', data:[], z:8,
+        markArea:{ silent:true, data:[[
+          { coord:[labels[off], boxH],
+            itemStyle:{color:'rgba(251,191,36,.06)'} },
+          { coord:[labels[total-1], boxL] },
+        ]] },
+      });
+      const bD2=new Array(total).fill(null); bD2[total-1]=boxH*1.012;
+      patternSeries.push({
+        name:'箱型Badge', type:'scatter', data:bD2, symbolSize:0, z:15, silent:true,
+        label:{ show:true, formatter:'□ 箱型盤整 50%\n危險別碰',
+          color:'#fbbf24', fontWeight:700, fontSize:10,
+          backgroundColor:'rgba(20,18,8,.9)', padding:[3,8], borderRadius:3,
+          borderColor:'#5a4500', borderWidth:1 },
+      });
+    }
+
     // ③ 支撐壓力色塊
     if(showSR && p.detectSR){
       const allPivH = pivHighs.map(i=>scanCandles[i].high);
