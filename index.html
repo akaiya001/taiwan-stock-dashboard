@@ -2817,6 +2817,18 @@ function clearInspectLine(){
   });
 }
 
+function _getGridRect(chart){
+  // 取得 ECharts grid 的像素邊界 {x, y, width, height}
+  try{
+    const model = chart.getModel?.();
+    if(!model) return null;
+    const grid = model.getComponent('grid', 0);
+    if(!grid) return null;
+    const rect = grid.coordinateSystem?.getRect?.();
+    return rect || null;
+  } catch(_){ return null; }
+}
+
 function setInspectIdx(idx){
   const candles = STATE.rawData?.candles;
   const labels  = STATE.rawData?.labels || candles?.map((_,i)=>i);
@@ -2829,30 +2841,27 @@ function setInspectIdx(idx){
   const info = $('inspect-info');
   if(info) info.textContent = `${lbl}　收${c.close?.toFixed(2)}　量${(c.volume||0).toLocaleString()}張`;
 
-  // 用 convertToPixel 把 xAxis dataIndex 轉成像素，再用 graphic line 畫垂直線
-  // 這樣完全不動 series，不會清掉任何資料
   ['main','vol','kd','macd','rsi'].forEach(id=>{
     const chart = CHARTS[id];
     if(!chart) return;
     try{
-      // 取得該 idx 在圖上的像素 x 座標
-      const pt = chart.convertToPixel({ xAxisIndex:0 }, idx);
-      if(pt == null || isNaN(pt)) return;
-      const x   = pt;
-      const h   = chart.getHeight();
-      const top = chart.convertToPixel({ yAxisIndex:0 }, chart.getOption().yAxis?.[0]?.max ?? 0);
-      const bot = chart.convertToPixel({ yAxisIndex:0 }, chart.getOption().yAxis?.[0]?.min ?? 0);
-      const y1  = isNaN(top) ? 0  : top;
-      const y2  = isNaN(bot) ? h  : bot;
+      // x 像素：category 軸 convertToPixel 傳 index，回傳數字
+      const x = chart.convertToPixel({ xAxisIndex:0 }, idx);
+      if(x == null || isNaN(x)) return;
+
+      // y 範圍：優先用 grid rect，fallback 用容器高度
+      const rect = _getGridRect(chart);
+      const h    = chart.getHeight();
+      const y1   = rect ? rect.y              : 0;
+      const y2   = rect ? rect.y + rect.height : h;
 
       chart.setOption({ graphic:[{
         type:'line',
         shape:{ x1:x, y1:y1, x2:x, y2:y2 },
-        style:{ stroke:'rgba(251,191,36,.85)', lineWidth:1.2,
-                lineDash:[4,3] },
+        style:{ stroke:'rgba(251,191,36,.85)', lineWidth:1.2, lineDash:[4,3] },
         silent:true, z:100,
       }]}, false);
-    } catch(_){}
+    } catch(e){ console.warn('[inspect]', id, e.message); }
   });
 }
 
