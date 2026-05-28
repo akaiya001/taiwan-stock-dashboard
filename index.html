@@ -2812,9 +2812,8 @@ function toggleInspectLine(){
 }
 
 function clearInspectLine(){
-  const empty = { data:[], animation:false };
   ['main','vol','kd','macd','rsi'].forEach(id=>{
-    CHARTS[id]?.setOption({ series:[{ name:'__inspect__', type:'scatter', data:[], markLine:empty }] }, false);
+    CHARTS[id]?.setOption({ graphic:[] }, false);
   });
 }
 
@@ -2823,30 +2822,37 @@ function setInspectIdx(idx){
   const labels  = STATE.rawData?.labels || candles?.map((_,i)=>i);
   if(!candles || idx < 0 || idx >= candles.length) return;
   INSPECT.idx = idx;
-  const c = candles[idx];
+  const c   = candles[idx];
   const lbl = labels[idx];
 
   // 顯示資訊
   const info = $('inspect-info');
   if(info) info.textContent = `${lbl}　收${c.close?.toFixed(2)}　量${(c.volume||0).toLocaleString()}張`;
 
-  // 用 dataIndex 定位確保所有圖對齊（避免 xAxis label 字串在不同圖偏移）
-  const mlCfg = {
-    silent:true, symbol:'none', animation:false,
-    data:[{
-      xAxis: idx,   // 數字索引，各圖 xAxis 都是同長度 category，對齊一致
-      lineStyle:{color:'rgba(251,191,36,.82)',width:1.2,type:'dashed'},
-      label:{show:false}
-    }]
-  };
-
+  // 用 convertToPixel 把 xAxis dataIndex 轉成像素，再用 graphic line 畫垂直線
+  // 這樣完全不動 series，不會清掉任何資料
   ['main','vol','kd','macd','rsi'].forEach(id=>{
-    CHARTS[id]?.setOption({
-      series:[{ name:'__inspect__', type:'scatter',
-        xAxisIndex:0, yAxisIndex:0,
-        data:[], silent:true, z:20,
-        markLine:mlCfg }]
-    }, false);
+    const chart = CHARTS[id];
+    if(!chart) return;
+    try{
+      // 取得該 idx 在圖上的像素 x 座標
+      const pt = chart.convertToPixel({ xAxisIndex:0 }, idx);
+      if(pt == null || isNaN(pt)) return;
+      const x   = pt;
+      const h   = chart.getHeight();
+      const top = chart.convertToPixel({ yAxisIndex:0 }, chart.getOption().yAxis?.[0]?.max ?? 0);
+      const bot = chart.convertToPixel({ yAxisIndex:0 }, chart.getOption().yAxis?.[0]?.min ?? 0);
+      const y1  = isNaN(top) ? 0  : top;
+      const y2  = isNaN(bot) ? h  : bot;
+
+      chart.setOption({ graphic:[{
+        type:'line',
+        shape:{ x1:x, y1:y1, x2:x, y2:y2 },
+        style:{ stroke:'rgba(251,191,36,.85)', lineWidth:1.2,
+                lineDash:[4,3] },
+        silent:true, z:100,
+      }]}, false);
+    } catch(_){}
   });
 }
 
