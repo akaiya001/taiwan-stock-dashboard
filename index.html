@@ -2562,15 +2562,24 @@ function initCharts(){
   // 查價線點擊綁定
   bindInspectClick();
 
-  // dataZoom 同步（inside zoom 不觸發 connect，需手動同步）
-  CHARTS.main?.on('dataZoom', ()=>{
-    const opt=CHARTS.main.getOption();
-    const dz=opt?.dataZoom?.[0];
+  // dataZoom 同步（inside/slider 觸發時，同步所有副圖）
+  const syncSubZoom = () => {
+    const opt = CHARTS.main?.getOption();
+    const dz  = opt?.dataZoom;
     if(!dz) return;
+    // slider(idx=1) 優先，否則用 inside(idx=0)
+    const src = dz[1] || dz[0];
+    if(!src) return;
+    const s = src.start ?? 0, e = src.end ?? 100;
     ['vol','kd','macd','rsi'].forEach(id=>{
-      CHARTS[id]?.setOption({dataZoom:[{type:'inside',start:dz.start,end:dz.end,zoomOnMouseWheel:false,moveOnMouseWheel:false,disabled:window._isMobile}]});
+      CHARTS[id]?.setOption({dataZoom:[{
+        type:'inside', start:s, end:e,
+        zoomOnMouseWheel:false, moveOnMouseWheel:false,
+        disabled:window._isMobile
+      }]}, false);
     });
-  });
+  };
+  CHARTS.main?.on('dataZoom', syncSubZoom);
 }
 
 // ══════════════════════════════════════════
@@ -2758,17 +2767,21 @@ function zoomChart(n){
     end   = 100;
     start = Math.max(0, Math.round((1 - n / total) * 100));
   }
-  const dz = {type:'inside',start,end,zoomOnMouseWheel:false,moveOnMouseWheel:false,disabled:window._isMobile};
-  ['main','vol','kd','macd','rsi'].forEach(id=>{
-    CHARTS[id]?.setOption({dataZoom:[dz]},false);
-  });
-  // slider 同步（手機上 slider 始終啟用）
+  const dzInside = {type:'inside',start,end,zoomOnMouseWheel:false,moveOnMouseWheel:false,disabled:window._isMobile};
+
+  // 主圖：inside + slider
   const sliderCfg = window._isMobile
     ? {type:'slider',start,end, height:20, handleSize:'120%', moveHandleSize:20,
         borderColor:'var(--bd2)', fillerColor:'rgba(34,211,238,.12)',
         handleStyle:{color:'var(--cyan)'}, labelFormatter:''}
     : {type:'slider',start,end};
-  CHARTS.main?.setOption({dataZoom:[dz, sliderCfg]},false);
+  CHARTS.main?.setOption({dataZoom:[dzInside, sliderCfg]},false);
+
+  // 副圖：明確設 inside（不帶 slider，跟隨主圖）
+  ['vol','kd','macd','rsi'].forEach(id=>{
+    CHARTS[id]?.setOption({dataZoom:[dzInside]},false);
+  });
+
   // active 樣式
   document.querySelectorAll('.zoom-btn').forEach(b=>{
     b.classList.toggle('active', b.textContent.trim()===(n===0?'全':String(n)));
@@ -2817,17 +2830,21 @@ function setInspectIdx(idx){
   const info = $('inspect-info');
   if(info) info.textContent = `${lbl}　收${c.close?.toFixed(2)}　量${(c.volume||0).toLocaleString()}張`;
 
-  // markLine 設定（垂直線）
-  const lineData = [{ xAxis: lbl,
-    lineStyle:{color:'rgba(251,191,36,.75)',width:1.2,type:'dashed'},
-    label:{show:false} }];
+  // 用 dataIndex 定位確保所有圖對齊（避免 xAxis label 字串在不同圖偏移）
+  const mlCfg = {
+    silent:true, symbol:'none', animation:false,
+    data:[{
+      xAxis: idx,   // 數字索引，各圖 xAxis 都是同長度 category，對齊一致
+      lineStyle:{color:'rgba(251,191,36,.82)',width:1.2,type:'dashed'},
+      label:{show:false}
+    }]
+  };
 
-  const mlCfg = { silent:true, symbol:'none', animation:false, data: lineData };
-
-  // 各圖注入同一條垂直線（用 scatter 掛 markLine，name 固定避免 series 累積）
   ['main','vol','kd','macd','rsi'].forEach(id=>{
     CHARTS[id]?.setOption({
-      series:[{ name:'__inspect__', type:'scatter', data:[], silent:true, z:20,
+      series:[{ name:'__inspect__', type:'scatter',
+        xAxisIndex:0, yAxisIndex:0,
+        data:[], silent:true, z:20,
         markLine:mlCfg }]
     }, false);
   });
