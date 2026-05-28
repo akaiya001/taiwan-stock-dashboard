@@ -2526,7 +2526,7 @@ function calcMA(arr,n){
 function initCharts(){
   const base={
     backgroundColor:'transparent', animation:false,
-    grid:{ top:20, bottom:20, left:52, right:12 },
+    grid:{ top:20, bottom:20, left:52, right:62 },
     xAxis:{ type:'category', data:[],
       axisLine:{lineStyle:{color:'#1a2130'}},
       axisLabel:{show:false},
@@ -3008,7 +3008,7 @@ function renderAllCharts(candles, meta){
     yAxis:{ splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
       axisLabel:{ color:'#4a5c7a', fontSize:8,
         formatter:v=>v>=10000?(v/10000).toFixed(0)+'w':v } },
-    grid:{ top:20, bottom:6, left:52, right:12 },
+    grid:{ top:20, bottom:6, left:52, right:62 },
     dataZoom:[{type:'inside',start:0,end:100,zoomOnMouseWheel:false,moveOnMouseWheel:false,disabled:window._isMobile}],
     series:[
       { name:'量',  type:'bar',
@@ -3032,7 +3032,7 @@ function renderAllCharts(candles, meta){
     yAxis:{ min:0, max:100,
       splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
       axisLabel:{color:'#4a5c7a',fontSize:8} },
-    grid:{ top:20, bottom:6, left:52, right:12 },
+    grid:{ top:20, bottom:6, left:52, right:62 },
     dataZoom:[{type:'inside',start:0,end:100,zoomOnMouseWheel:false,moveOnMouseWheel:false,disabled:window._isMobile}],
     series:[
       { name:'K', type:'line', data:kdK, symbol:'none',
@@ -3069,7 +3069,7 @@ function renderAllCharts(candles, meta){
       axisLabel:{show:false}, splitLine:{show:false} },
     yAxis:{ splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
       axisLabel:{color:'#4a5c7a',fontSize:8} },
-    grid:{ top:20, bottom:6, left:52, right:12 },
+    grid:{ top:20, bottom:6, left:52, right:62 },
     dataZoom:[{type:'inside',start:0,end:100,zoomOnMouseWheel:false,moveOnMouseWheel:false,disabled:window._isMobile}],
     series:[
       { name:'DIF',  type:'line', data:dif, symbol:'none',
@@ -3102,7 +3102,7 @@ function renderAllCharts(candles, meta){
     yAxis:{ min:0, max:100,
       splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}},
       axisLabel:{color:'#4a5c7a',fontSize:8} },
-    grid:{ top:20, bottom:26, left:52, right:12 },
+    grid:{ top:20, bottom:26, left:52, right:62 },
     dataZoom:[{type:'inside',start:0,end:100,zoomOnMouseWheel:false,moveOnMouseWheel:false,disabled:window._isMobile}],
     series:[
       { name:'超買帶', type:'line', data:rsiArr.map(()=>rsiOB), symbol:'none', z:1,
@@ -3728,7 +3728,7 @@ function renderAllCharts(candles, meta){
       yAxis:{ scale:true,
         position:'right', axisLabel:{color:'#8494b0',fontSize:8},
         splitLine:{lineStyle:{color:'#1a2130',type:'dashed'}} },
-      grid:{ top:20, bottom:28, left:8, right:62 },
+      grid:{ top:20, bottom:28, left:52, right:62 },
       dataZoom:[
         {type:'inside', start:0, end:100, zoomLock:false, zoomOnMouseWheel:false, moveOnMouseWheel:false, disabled:window._isMobile},
         {type:'slider', height:18, bottom:2, borderColor:'#1a2130',
