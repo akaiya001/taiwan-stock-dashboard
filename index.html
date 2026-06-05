@@ -527,7 +527,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
 <div class="charts-section">
   <div class="chart-toolbar">
     <div class="ma-legend">
-      <span class="ma-item" style="color:#f59e0b"><span class="ma-dot" style="background:#f59e0b"></span><span id="ma1-legend">MA5: —</span></span>
+      <span class="ma-item" style="color:#f59e0b"><span class="ma-dot" style="background:#f59e0b"></span><span id="ma1-legend">MA20: —</span></span>
       <span class="ma-item" style="color:#4a90e2"><span class="ma-dot" style="background:#4a90e2"></span><span id="ma2-legend">MA20: —</span></span>
       <span class="ma-item" style="color:#9b72f5"><span class="ma-dot" style="background:#9b72f5"></span><span id="ma3-legend">MA60: —</span></span>
       <span class="ma-item" style="color:#e84545"><span class="ma-dot" style="background:#e84545;height:1px;border-top:1px dashed #e84545"></span><span id="ma4-legend">MA240: —</span></span>
@@ -648,7 +648,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
     <div class="bcard-body">
       <div class="bcard-row"><span class="bcard-lbl">今日量</span><span class="bcard-val" id="bc-vol-today">—</span></div>
       <div class="bcard-row">
-        <span class="bcard-lbl">MA5量</span><span class="bcard-val" id="bc-vol-ma">—</span>
+        <span class="bcard-lbl">MA20量</span><span class="bcard-val" id="bc-vol-ma">—</span>
         <span class="bcard-lbl">量比</span><span class="bcard-val" id="bc-vol-ratio">—</span>
       </div>
       <div class="mini-chart" id="mini-vol2"></div>
@@ -956,7 +956,7 @@ body{background:var(--bg0);color:var(--tx1);font-family:var(--ui);font-size:14px
       <span class="section-arr open" id="arr-pm-ma">▼</span>
     </div>
     <div class="param-body" id="pm-ma">
-      <div class="param-row"><span class="param-lbl">MA1（天）</span><input class="param-inp" id="p-ma1" value="5"></div>
+      <div class="param-row"><span class="param-lbl">MA1（天）</span><input class="param-inp" id="p-ma1" value="20"></div>
       <div class="param-row"><span class="param-lbl">MA2（天）</span><input class="param-inp" id="p-ma2" value="20"></div>
       <div class="param-row"><span class="param-lbl">MA3（天）</span><input class="param-inp" id="p-ma3" value="60"></div>
       <div class="param-row"><span class="param-lbl">MA4 年線</span><input class="param-inp" id="p-ma4" value="240"></div>
@@ -1061,7 +1061,7 @@ const STATE = {
   symbol:  '2330',
   rawData: null,
   params: {
-    ma1:5, ma2:20, ma3:60, ma4:240,
+    ma1:20, ma2:60, ma3:120, ma4:240,
     kdN:9, kdM1:3, kdM2:3,
     macdFast:12, macdSlow:26, macdSignal:9,
     rsi:14, volMA:5,
@@ -1670,7 +1670,7 @@ async function fetchStockData(symbol){
 // ══════════════════════════════════════════
 // 出廠預設值
 const FACTORY_PARAMS = {
-  ma1:5, ma2:20, ma3:60, ma4:240,
+  ma1:20, ma2:60, ma3:120, ma4:240,
   kdN:9, kdM1:3, kdM2:3,
   macdFast:12, macdSlow:26, macdSignal:9,
   rsi:14, volMA:5,
@@ -1681,7 +1681,7 @@ function readParams(){
   const n = id => parseInt($(id)?.value)||0;
   const b = id => $(id)?.checked ?? true;
   STATE.params = {
-    ma1:n('p-ma1')||5,  ma2:n('p-ma2')||20, ma3:n('p-ma3')||60, ma4:n('p-ma4')||240,
+    ma1:n('p-ma1')||20, ma2:n('p-ma2')||60, ma3:n('p-ma3')||120, ma4:n('p-ma4')||240,
     kdN:n('p-kd-n')||9, kdM1:n('p-kd-m1')||3, kdM2:n('p-kd-m2')||3,
     macdFast:n('p-mf')||12, macdSlow:n('p-ms')||26, macdSignal:n('p-mg')||9,
     rsi:n('p-rsi')||14, volMA:n('p-vma')||5,
@@ -1717,7 +1717,7 @@ function resetParams(){
 }
 
 function resetParams(){
-  [['p-ma1',5],['p-ma2',20],['p-ma3',60],['p-ma4',240],
+  [['p-ma1',20],['p-ma2',60],['p-ma3',120],['p-ma4',240],
    ['p-kd-n',9],['p-kd-m1',3],['p-kd-m2',3],
    ['p-mf',12],['p-ms',26],['p-mg',9],
    ['p-rsi',14],['p-vma',5]
@@ -2674,7 +2674,7 @@ function renderHeader(meta){
     const bcEst  = $('bc-est-vol');
     const attackCard = $('bc-attack-vol-card');
     if(estVol && factor && meta.isTrading){
-      // MA5 量（從 STATE 取）
+      // MA20 量（從 STATE 取）
       const vols = STATE.rawData?.candles?.map(c=>c.volume) || [];
       const ma5v = vols.length>=5 ? Math.round(vols.slice(-6,-1).reduce((a,b)=>a+b,0)/5) : 0;
       const isAttack = ma5v > 0 && estVol > ma5v;
@@ -2686,7 +2686,7 @@ function renderHeader(meta){
       if(thEst){
         thEst.textContent = estStr;
         thEst.className   = 'tohlcv-val ' + (isAttack ? 'up' : '');
-        thEst.title       = `盤中量能預估（當前倍數${factorStr}）${isAttack?'⚡ 超越MA5，具攻擊量！':''}`;
+        thEst.title       = `盤中量能預估（當前倍數${factorStr}）${isAttack?'⚡ 超越MA20，具攻擊量！':''}`;
       }
       // 卡片
       if(bcEst){ bcEst.textContent = `${estStr}（${factorStr}）`; bcEst.className='bcard-val '+(isAttack?'up':''); }
@@ -2697,10 +2697,10 @@ function renderHeader(meta){
         const sub = $('bc-attack-vol-sub');
         if(isAttack){
           if(lbl) lbl.textContent = '⚡ 具攻擊量！';
-          if(sub) sub.textContent = `預估${estStr} > MA5量${fmtInt(ma5v)}張（+${exceedPct}%）`;
+          if(sub) sub.textContent = `預估${estStr} > MA20量${fmtInt(ma5v)}張（+${exceedPct}%）`;
         } else {
           if(lbl) lbl.textContent = '量能觀察中';
-          if(sub) sub.textContent = `預估${estStr}，MA5量${fmtInt(ma5v)}張，尚未達攻擊量`;
+          if(sub) sub.textContent = `預估${estStr}，MA20量${fmtInt(ma5v)}張，尚未達攻擊量`;
         }
       }
     } else {
